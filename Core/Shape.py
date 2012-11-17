@@ -702,15 +702,52 @@ class ShapeClass(QtGui.QGraphicsItem):
         
         offsetShape.geos = []
         
-        P1=Point(x=10.0,y=20.0)
-        P2=Point(x=20.0,y=20.0)
-        P3=Point(x=30.0,y=-10.0)
         
-        geo1=LineGeo(P1,P2)
-        geo2=LineGeo(P2,P3)
-        geo3=LineGeo(P3,P1)
+        """
+        Adding some offset to the curve in order to see it
+        """
+        offset=Point(x=1.0,y=1.0)
         
-        offsetShape.geos = [geo1,geo2,geo3]
+        """Fist Startpoint of the Geometry is the Startpoint of the Shape too
+        This is a function just getting self.geos[0].Pa in absolute coordinates"""
+        Pa, dummy=self.get_st_en_points()
+          
+        """Geometries are order Therefore The Endpoint of geo[i] will be the start
+        point of the geo[i+1]"""
+        for geo in self.geos:
+            """Getting the absolute geometrie (required since geometrie may be
+            the geometries of entities which are used different time by inserts"""
+            abs_geo=geo.make_abs_geo(self.parent, 0)
+            Pe=abs_geo.Pe
+            
+            """
+            Just to show it
+            """
+            Line=LineGeo(Pa+offset,Pe+offset)
+            offsetShape.geos.append(Line)
+            
+            """Endpoint is the new start Point"""
+            Pa=abs_geo.Pe
+        
+        """If the shape is closed the endpoint is the startpoint too"""
+        if self.closed:
+            offsetShape.geos[-1].Pe=offsetShape.geos[0].Pa
+            
+            
+            
+            
+            
+#            
+#        
+#        P1=Point(x=10.0,y=20.0)
+#        P2=Point(x=20.0,y=20.0)
+#        P3=Point(x=30.0,y=-10.0)
+#        
+#        geo1=LineGeo(P1,P2)
+#        geo2=LineGeo(P2,P3)
+#        geo3=LineGeo(P3,P1)
+#        
+#        offsetShape.geos = [geo1,geo2,geo3]
         
         self.offsetShapes.append(offsetShape)
         
