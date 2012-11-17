@@ -166,6 +166,7 @@ class MyGraphicsView(QtGui.QGraphicsView):
 #                    item.starrow.setSelected(False)
 #                    item.stmove.setSelected(False)
 #                    item.enarrow.setSelected(False)
+                    print (item.flags())
                     item.setSelected(False)
                 
             
@@ -287,6 +288,9 @@ class MyDropDownMenu(QtGui.QMenu):
         
         self.addMenu(submenu1)
         
+        self.addSeparator()
+        self.createOffsetCurveAction=self.addAction("Create Offset Curve")
+        
         invertAction.triggered.connect(self.invertSelection)
         disableAction.triggered.connect(self.disableSelection)
         enableAction.triggered.connect(self.enableSelection)
@@ -298,7 +302,8 @@ class MyDropDownMenu(QtGui.QMenu):
         self.leCompAction.triggered.connect(self.setLeftComp)
         self.reCompAction.triggered.connect(self.setRightComp)
         
-
+        self.createOffsetCurveAction.triggered.connect(self.createOffsetCurve)
+        
         self.exec_(self.position)
         
             
@@ -434,6 +439,21 @@ class MyDropDownMenu(QtGui.QMenu):
                              %(shape.nr))
             shape.updateCutCor()
             shape.updateCCplot()
+            
+    def createOffsetCurve(self):
+        """
+        This menu point is selected from the Contextmenu and shall be used to create 
+        a offsetcurve with openvoroni. The algorithm is called for every shape.
+        The offsetcurve is created by means of an additional shape which is the child 
+        of a shape.
+        """
+        
+        shapes=self.MyGraphicsScene.selectedItems()
+        for shape in shapes:
+            logger.debug(_('Calling the createOffsetCurve Instance of the shape class for shape nr: %s')\
+                             %(shape.nr))
+            shape.createOffsetCurve()
+            self.MyGraphicsScene.plotoffsetShapes(shape)
  
 class MyGraphicsScene(QtGui.QGraphicsScene): 
     """
@@ -447,6 +467,7 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
        
         self.shapes=[]
         self.wpzero=[]
+        self.offsetshapes=[]
 #        self.LayerContents=[]
         self.routearrows=[]
         self.routetext=[]
@@ -675,3 +696,16 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
             elif not(flag) and shape.isDisabled():
                 shape.hide()
      
+    def plotoffsetShapes(self,shape):
+        """
+        This instance is created to plot the offsetShapes created for the shape
+        itself.
+        @param shape: The shape whoes offsetshapes shall be plotted.
+        """
+        
+        for offsetShape in shape.offsetShapes:
+            self.addItem(offsetShape)
+            offsetShape.make_papath()
+            offsetShape.show()
+        
+        

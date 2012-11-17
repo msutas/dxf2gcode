@@ -32,6 +32,8 @@ from PyQt4 import QtCore, QtGui
 import Core.Globals as g
 
 from Core.Point import Point
+from Core.ArcGeo import ArcGeo
+from Core.LineGeo import LineGeo
 from Core.BoundingBox import BoundingBox
 from math import cos, sin, degrees
 from copy import deepcopy
@@ -87,6 +89,9 @@ class ShapeClass(QtGui.QGraphicsItem):
         self.stmove = []
         self.LayerContent=None
         self.geos = geos
+        
+        self.offsetShapes=[]
+        
         #self.BB = BoundingBox(Pa=None, Pe=None)
         self.axis3_mill_depth = axis3_mill_depth
         self.axis3_start_mill_depth = axis3_start_mill_depth
@@ -289,14 +294,18 @@ class ShapeClass(QtGui.QGraphicsItem):
         Override inherited function to turn off selection of Arrows.
         @param flag: The flag to enable or disable Selection
         """
-        self.starrow.setSelected(flag)
-        self.enarrow.setSelected(flag)
-        self.stmove.setSelected(flag)
-
-        super(ShapeClass, self).setSelected(flag)
-
-        if self.selectionChangedCallback and not blockSignals:
-            self.selectionChangedCallback(self, flag)
+        if self.parent.Name=='OffsetCurves':
+            pass
+        else:
+        
+            self.starrow.setSelected(flag)
+            self.enarrow.setSelected(flag)
+            self.stmove.setSelected(flag)
+            
+            super(ShapeClass, self).setSelected(flag)
+    
+            if self.selectionChangedCallback and not blockSignals:
+                self.selectionChangedCallback(self, flag)
 
     def setDisable(self,flag=False,blockSignals=False):
         """
@@ -379,9 +388,9 @@ class ShapeClass(QtGui.QGraphicsItem):
         
         if self.closed:
             logger.debug("Clicked Point: %s" %StPoint)
-            min_distance=self.geos[0].Pa.distance(StPoint)
-            
             start, dummy=self.geos[0].get_start_end_points(0,self.parent)
+            min_distance=min_distance=start.distance(StPoint)
+            
             logger.debug("Old Start Point: %s" %start)
             
             min_geo_nr=0
@@ -657,3 +666,52 @@ class ShapeClass(QtGui.QGraphicsItem):
             self.switch_cut_cor()
 
         return exstr
+    
+    def createOffsetCurve(self,Offset=1.0):
+        """
+        This method creates a new Shape which is the offset of the parent shape.
+        @param Offset: This is the offset of the new shape which will be created 
+        by this function.        
+        """
+
+        BaseEntitie = EntitieContentClass(Nr= -1, Name='OffsetCurves',
+                                        parent=None,
+                                        children=[],
+                                        p0=Point(x=0.0, y=0.0),
+                                        pb=Point(x=0.0, y=0.0),
+                                        sca=[1, 1, 1],
+                                        rot=0.0)
+
+        offsetShape=ShapeClass(nr=self.nr, closed=self.closed, cut_cor=self.cut_cor,
+                               length=self.length, parent=BaseEntitie, geos=[], 
+                               axis3_start_mill_depth=self.axis3_start_mill_depth,
+                               axis3_mill_depth=self.axis3_mill_depth)
+
+        offsetShape.pen=QtGui.QPen(QtCore.Qt.darkGray,2)
+        offsetShape.pen.setCosmetic(True)
+        offsetShape.sel_pen=QtGui.QPen(QtCore.Qt.magenta,2) #,QtCore.Qt.DashLine
+        offsetShape.sel_pen.setCosmetic(True)
+        offsetShape.dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+        offsetShape.dis_pen.setCosmetic(True)
+        offsetShape.sel_dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+        offsetShape.sel_dis_pen.setCosmetic(True)
+        
+
+        offsetShape.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
+        offsetShape.disabled=False
+        
+        offsetShape.geos = []
+        
+        P1=Point(x=10.0,y=20.0)
+        P2=Point(x=20.0,y=20.0)
+        P3=Point(x=30.0,y=-10.0)
+        
+        geo1=LineGeo(P1,P2)
+        geo2=LineGeo(P2,P3)
+        geo3=LineGeo(P3,P1)
+        
+        offsetShape.geos = [geo1,geo2,geo3]
+        
+        self.offsetShapes.append(offsetShape)
+        
+        

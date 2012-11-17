@@ -100,7 +100,6 @@ class LoggerClass():
 
 class FilterModule(logging.Filter): 
     def filter(self, record): 
-        #return 'PostPro' in record.name
         return True
 
 

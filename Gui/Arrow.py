@@ -118,8 +118,8 @@ class Arrow(QtGui.QGraphicsLineItem):
         self.sc=demat.m11()
         
         if self.endp is None:
-            dx = cos(radians(self.angle)) * self.length/self.sc
-            dy = sin(radians(self.angle)) * self.length/self.sc
+            dx = cos(self.angle) * self.length/self.sc
+            dy = sin(self.angle) * self.length/self.sc
             
             endp=QtCore.QPointF(self.startp.x()+dx,self.startp.y()-dy)
         else:
@@ -133,10 +133,11 @@ class Arrow(QtGui.QGraphicsLineItem):
         self.setLine(QtCore.QLineF(endp,self.startp))
         line = self.line()
 
-        try:
-            angle = acos(line.dx() / line.length())
-        except ZeroDivisionError: #FIXME : added by Xavier because the file "problem_with_arc_and_problem_with_G41-G42_auto_switch.dxf" throw a division by zero error
-            return
+        angle = acos(line.dx() / line.length())
+#        try:
+#            angle = acos(line.dx() / line.length())
+#        except ZeroDivisionError: #FIXME : added by Xavier because the file "problem_with_arc_and_problem_with_G41-G42_auto_switch.dxf" throw a division by zero error
+#            return
 
         if line.dy() >= 0:
             angle = (pi * 2.0) - angle
@@ -176,8 +177,8 @@ class Arrow(QtGui.QGraphicsLineItem):
         extra = (arrowSize) / 2.0 #self.pen.width() +
         
         if self.endp is None:
-            dx = cos(radians(self.angle)) * self.length/self.sc
-            dy = sin(radians(self.angle)) * self.length/self.sc
+            dx = cos(self.angle) * self.length/self.sc
+            dy = sin(self.angle) * self.length/self.sc
             
             endp=QtCore.QPointF(self.startp.x()+dx,self.startp.y()-dy)
         else:
