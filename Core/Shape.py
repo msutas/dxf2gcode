@@ -35,7 +35,7 @@ from Core.Point import Point
 from Core.ArcGeo import ArcGeo
 from Core.LineGeo import LineGeo
 from Core.BoundingBox import BoundingBox
-from math import cos, sin, degrees
+from math import cos, sin, degrees, pi
 from copy import deepcopy
 from EntitieContent import EntitieContentClass
 
@@ -389,7 +389,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         if self.closed:
             logger.debug("Clicked Point: %s" %StPoint)
             start, dummy=self.geos[0].get_start_end_points(0,self.parent)
-            min_distance=min_distance=start.distance(StPoint)
+            min_distance=start.distance(StPoint)
             
             logger.debug("Old Start Point: %s" %start)
             
@@ -547,7 +547,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         f_g1_depth = LayerContent.f_g1_depth if self.f_g1_depth is None else self.f_g1_depth
 
         #Save the initial Cutter correction in a variable
-        ini_cut_cor=self.cut_cor
+        has_reversed = 0
 
         #If the Output Format is DXF do not perform more then one cut.
         if PostPro.vars.General["output_type"] == 'dxf':
@@ -567,6 +567,9 @@ class ShapeClass(QtGui.QGraphicsItem):
 
         #Move the tool to the start.          
         exstr+=self.stmove.geos[0].Write_GCode(parent=BaseEntitie, PostPro=PostPro)
+        
+        #Add string to be added before the shape will be cut.
+        exstr+=PostPro.write_pre_shape_cut()
 
         #Cutter radius compensation when G41 or G42 is on, AND cutter compensation option is set to be done outside the piece
         if self.cut_cor != 40 and PostPro.vars.General["cc_outside_the_piece"]:
@@ -604,9 +607,9 @@ class ShapeClass(QtGui.QGraphicsItem):
         if (not(self.cut_cor == 40)) & (PostPro.vars.General["cancel_cc_for_depth"] == 1):
             ende, en_angle = self.get_st_en_points(1)
             if self.cut_cor == 41:
-                pos_cut_out = ende.get_arc_point(en_angle - 90, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle - pi/2, tool_rad)
             elif self.cut_cor == 42:
-                pos_cut_out = ende.get_arc_point(en_angle + 90, tool_rad)         
+                pos_cut_out = ende.get_arc_point(en_angle + pi/2, tool_rad)         
             exstr+=PostPro.deactivate_cut_cor(pos_cut_out)            
 
 
@@ -628,6 +631,7 @@ class ShapeClass(QtGui.QGraphicsItem):
             if self.closed == 0:
                 self.reverse()
                 self.switch_cut_cor()
+                has_reversed = 1 - has_reversed #switch the "reversed" state (in order to restore it at the end)
                 
             #If cutter correction is enabled
             if ((not(self.cut_cor == 40)) & (self.closed == 0))or(PostPro.vars.General["cancel_cc_for_depth"] == 1):
@@ -642,9 +646,9 @@ class ShapeClass(QtGui.QGraphicsItem):
             #Calculate the contour values ​​with cutter radius compensation and without
             ende, en_angle = self.get_st_en_points(1)
             if self.cut_cor == 41:
-                pos_cut_out = ende.get_arc_point(en_angle - 90, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle - pi/2, tool_rad)
             elif self.cut_cor == 42:
-                pos_cut_out = ende.get_arc_point(en_angle + 90, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle + pi/2, tool_rad)
 
             #Turning off the cutter radius compensation if needed
             if (not(self.cut_cor == 40)) & (PostPro.vars.General["cancel_cc_for_depth"] == 1):         
@@ -661,9 +665,12 @@ class ShapeClass(QtGui.QGraphicsItem):
             exstr+=PostPro.deactivate_cut_cor(ende)        
 
         #Initial value of direction restored if necessary
-        if ini_cut_cor != self.cut_cor:
+        if has_reversed != 0:
             self.reverse()
             self.switch_cut_cor()
+            
+        #Add string to be added before the shape will be cut.
+        exstr+=PostPro.write_post_shape_cut()
 
         return exstr
     

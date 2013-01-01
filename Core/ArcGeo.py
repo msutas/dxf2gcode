@@ -22,7 +22,10 @@
 #Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-from math import sqrt, sin, cos, degrees, pi, floor, ceil, copysign
+from math import sqrt, sin, cos, degrees, pi, floor, ceil
+
+from PyQt4 import QtCore
+
 from Core.Point import Point
 
 import logging
@@ -32,7 +35,7 @@ logger=logging.getLogger("Core.ArcGeo")
 dl = 0.2
 DEBUG = 1
 
-class ArcGeo:
+class ArcGeo(QtCore.QObject):
     """
     Standard Geometry Item used for DXF Import of all geometries, plotting and
     G-Code export.
@@ -40,7 +43,7 @@ class ArcGeo:
     def __init__(self, Pa=None, Pe=None, O=None, r=1,
                  s_ang=None, e_ang=None, direction=1):
         """
-        Standard Method to initialise the LineGeo
+        Standard Method to initialize the LineGeo
         """
         self.type = "ArcGeo"
         self.Pa = Pa
@@ -52,7 +55,7 @@ class ArcGeo:
         self.col = 'Black'
         
        
-        # Kreismittelpunkt bestimmen wenn Pa,Pe,r,und direction bekannt
+        # Get the Circle Milllw with known Start and End Points
         if type(self.O) == type(None):
            
             if (type(Pa) != type(None)) and \
@@ -77,7 +80,7 @@ class ArcGeo:
                 self.O.x = self.Pa.x - r * cos(self.s_ang)
                 self.O.y = self.Pa.y - r * sin(self.s_ang)
             else:
-                print('Missing value for Arc Geometry')
+                logger.error(self.tr("Missing value for Arc Geometry"))
 
         #Falls nicht übergeben dann Anfangs- und Endwinkel ausrechen            
         if type(self.s_ang) == type(None):
@@ -304,15 +307,17 @@ class ArcGeo:
         @return: Returns the string to be written to a file.
         """
 
-        anf, anf_ang=self.get_start_end_points(0,parent)
-        O=self.O.rot_sca_abs(parent=parent)
+        abs_geo=self.make_abs_geo(parent, 0)
+
+        anf, s_ang=abs_geo.get_start_end_points(0)
+        ende, e_ang=abs_geo.get_start_end_points(1)
+                
+        O=abs_geo.O
+        sR=abs_geo.r
         IJ=(O-anf)
-        ende, en_ang=self.get_start_end_points(1,parent)
         
-        s_ang=self.rot_angle(self.s_ang,parent)
-        e_ang=self.rot_angle(self.e_ang,parent)
-        
-        sR=self.scaleR(self.r,parent)
+
+
 
         #If the radius of the element is bigger then the max. radius export
         #the element as an line.
