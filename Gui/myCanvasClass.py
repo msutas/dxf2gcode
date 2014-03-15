@@ -14,7 +14,7 @@ Special purpose canvas including all required plotting function etc.
 
 from PyQt4 import QtCore, QtGui
 from Core.Point import Point
-#from Core.Shape import ShapeClass
+from Core.Shape import ShapeClass
 
 from Gui.WpZero import WpZero
 from Gui.Arrow import Arrow
@@ -22,7 +22,7 @@ from Gui.StMove import StMove
 from Gui.RouteText import RouteText
 #import math
 import Core.Globals as g
-#import Core.constants as c
+import Core.constants as c
 
 import logging
 logger = logging.getLogger("DxfImport.myCanvasClass") 
@@ -298,6 +298,8 @@ class MyDropDownMenu(QtGui.QMenu):
         self.noCompAction.triggered.connect(self.setNoComp)
         self.leCompAction.triggered.connect(self.setLeftComp)
         self.reCompAction.triggered.connect(self.setRightComp)
+        
+        self.createOffsetCurveAction.triggered.connect(self.createOffsetCurve)
         
         self.exec_(self.position)
         
@@ -636,18 +638,29 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
                 
         #shapes_st_en_points.append([start,ende])
     
-        #Print the optimised route
-        for shape_nr in range(len(exp_order)):
-            st = self.expprv
-            [en, dummy] = self.shapes[exp_order[shape_nr]].get_st_en_points(0)
-            [self.expprv, dummy] = self.shapes[exp_order[shape_nr]].get_st_en_points(1)    
+        #Ausdrucken der optimierten Route
+        for shape_nr in range(len(exp_order)+1):
+            
+            if shape_nr==0:
+                st=start
+                [en,dummy]=self.shapes[exp_order[shape_nr]].get_st_en_points(0)
+                col=QtCore.Qt.darkRed
+            elif shape_nr==(len(exp_order)):
+                [st,dummy]=self.shapes[exp_order[shape_nr-1]].get_st_en_points(1)
+                en=ende
+                col=QtCore.Qt.darkRed
+            else:
+                [st,dummy]=self.shapes[exp_order[shape_nr-1]].get_st_en_points(1)
+                [en,dummy]=self.shapes[exp_order[shape_nr]].get_st_en_points(0)
+                col=QtCore.Qt.darkGray
+                
 #            st=shapes_st_en_points[route[st_nr]][1]
 #            en=shapes_st_en_points[route[en_nr]][0]
 
             self.routearrows.append(Arrow(startp=st,
-                                          endp=en,
-                                          color=self.expcol,
-                                          pencolor=self.expcol))
+                  endp=en,
+                  color=col,
+                  pencolor=col))
             
             self.expcol = QtCore.Qt.darkGray
             
@@ -674,10 +687,20 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
         en = Point(x=x_st, y=y_st)
         self.expcol = QtCore.Qt.darkRed
         
-        self.routearrows.append(Arrow(startp=st,
-                                      endp=en,
-                                      color=self.expcol,
-                                      pencolor=self.expcol))
+        for shape_nr in range(len(exp_order)+1):
+            
+            if shape_nr==0:
+                st=start
+                [en,dummy]=self.shapes[exp_order[shape_nr]].get_st_en_points(0)
+            elif shape_nr==(len(exp_order)):
+                [st,dummy]=self.shapes[exp_order[shape_nr-1]].get_st_en_points(1)
+                en=ende
+            else:
+                [st,dummy]=self.shapes[exp_order[shape_nr-1]].get_st_en_points(1)
+                [en,dummy]=self.shapes[exp_order[shape_nr]].get_st_en_points(0)
+            
+            self.routearrows[shape_nr].updatepos(st,en)
+            self.routetext[shape_nr].updatepos(st)
         
         self.addItem(self.routearrows[-1])
     

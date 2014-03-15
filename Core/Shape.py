@@ -325,9 +325,6 @@ class ShapeClass(QtGui.QGraphicsItem):
         Override inherited function to turn off selection of Arrows.
         @param flag: The flag to enable or disable Selection
         """
-        self.starrow.setSelected(flag)
-        self.enarrow.setSelected(flag)
-        self.stmove.setSelected(flag)
         if self.parent.Name=='OffsetCurves':
             pass
         else:
