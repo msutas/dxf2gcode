@@ -1,11 +1,13 @@
 # -*- coding: ISO-8859-1 -*-
-from Point import PointClass
-from base_geometries import  LineGeo, ArcGeo 
-from bounding_box import BoundingBoxClass
-from shape import ShapeClass
+from Core.Point import Point
+from Core.ArcGeo import  ArcGeo 
+from Core.LineGeo import LineGeo
+from Core.Shape import ShapeClass
+from Core.BoundingBox import BoundingBox
 
 from copy import deepcopy 
 from math import sin, cos, atan2, sqrt, pow, pi, degrees
+
 
 # based on an article of X.-Z Liu et al. /Computer in Industry 58(2007)
 #
@@ -64,9 +66,7 @@ class ShapeOffsetClass:
                            cut_cor=40,
                            nr=shape.nr,
                            closed=shape.closed,
-                           plotoption=0,
-                           geos=[],
-                           geos_hdls=[])
+                           geos=[])
         
         joinedshape.BB = shape.BB
         
@@ -104,9 +104,7 @@ class ShapeOffsetClass:
                            cut_cor=40,
                            nr=joinedshape.nr,
                            closed=joinedshape.closed,
-                           plotoption=0,
-                           geos=[],
-                           geos_hdls=[])
+                           geos=[])
         
         pretshape.BB = joinedshape.BB
         
@@ -168,9 +166,7 @@ class ShapeOffsetClass:
                            cut_cor=40,
                            nr=self.shape.nr,
                            closed=self.shape.closed,
-                           plotoption=0,
-                           geos=[],
-                           geos_hdls=[])
+                           geos=[])
         
         rawoffshape.BB = self.shape.BB
         
@@ -192,10 +188,8 @@ class ShapeOffsetClass:
         untroffshape = ShapeClass(parent=self.shape.parent,
                            cut_cor=40,
                            nr=self.shape.nr,
-                           plotoption=1,
                            closed=self.shape.closed,
-                           geos=[],
-                           geos_hdls=[])
+                           geos=[])
          
         #Return nothing if there is no geo in shape
         if len(rawoffshape.geos)==0:
@@ -312,16 +306,16 @@ class ShapeOffsetClass:
                     
                     if intersect:
                         points = geo1.find_inter_points(geo2)  
-                        for Point in points:
+                        for point in points:
                              
-                            if Point.isTIP(geo1, self.tol, 'all') and \
-                             Point.isTIP(geo2, self.tol, 'all'):
+                            if point.isTIP(geo1, self.tol, 'all') and \
+                             point.isTIP(geo2, self.tol, 'all'):
     #                            print 'Intersection'
     #                            print geo1
     #                            print geo2
                                 
-                                geo1.inters.append(Point)
-                                geo2.inters.append(Point)
+                                geo1.inters.append(point)
+                                geo2.inters.append(point)
                 
                 geo2_index+=1
                 if geo2_index==len(BBListPa):
@@ -344,19 +338,19 @@ class ShapeOffsetClass:
 ##                
 ##                if intersect:
 ##                    points = geo1.find_inter_points(geo2)  
-##                    for Point in points:
+##                    for point in points:
 ###                        print geo1
 ###                        print geo2
-###                        print Point
-##                        #print geo1.isTIP(Point, self.tol, 'all')
-##                        #print geo2.isTIP(Point, self.tol, 'all')
+###                        print point
+##                        #print geo1.isTIP(point, self.tol, 'all')
+##                        #print geo2.isTIP(point, self.tol, 'all')
 ##                         
-##                        if Point.isTIP(geo1, self.tol, 'all') and \
-##                         Point.isTIP(geo2, self.tol, 'all'):
-##                            #if not(Point.isintol(geo1.Pe, self.tol))and \
-##                            #not(Point.isintol(geo2.Pa, self. tol)):
-##                            geo1.inters.append(Point)
-##                            geo2.inters.append(Point)
+##                        if point.isTIP(geo1, self.tol, 'all') and \
+##                         point.isTIP(geo2, self.tol, 'all'):
+##                            #if not(point.isintol(geo1.Pe, self.tol))and \
+##                            #not(point.isintol(geo2.Pa, self. tol)):
+##                            geo1.inters.append(point)
+##                            geo2.inters.append(point)
 
                            
         #Sort the intersection Points in asscending order and then splits the 
@@ -449,13 +443,13 @@ class ShapeOffsetClass:
 ##                
 ##                    if intersect:
 ##                        points = geo1.find_inter_points(geo2)  
-##                        for Point in points:
+##                        for point in points:
 ##                         
-##                            if Point.isTIP(geo1, self.tol) and \
-##                             Point.isTIP(geo2, self.tol):
+##                            if point.isTIP(geo1, self.tol) and \
+##                             point.isTIP(geo2, self.tol):
 ##                                #print geo1
 ##                                #print geo2
-##                                #print Point
+##                                #print point
 ##                                del_shapes.append(clippedshapes[s_nr])
 ##                                break_l=1
 ##                                break
@@ -488,11 +482,9 @@ class ShapeOffsetClass:
                            cut_cor=40,
                            nr=self.shape_nr,
                            closed=self.shape.closed,
-                           plotoption=1,
-                           geos=[],
-                           geos_hdls=[])
+                           geos=[])
         return clippedshape
-       
+    
     def cmp_Pa(self,geo1,geo2):
         """
         Compare Function for the sorting
@@ -553,8 +545,8 @@ class CCArcGeo(ArcGeo):
         Calculated the BoundingBox of the geometry and saves it into self.BB
         """
         
-        Pa = PointClass(x=self.O.x - self.r, y=self.O.y - self.r)
-        Pe = PointClass(x=self.O.x + self.r, y=self.O.y + self.r)
+        Pa = Point(x=self.O.x - self.r, y=self.O.y - self.r)
+        Pe = Point(x=self.O.x + self.r, y=self.O.y + self.r)
         
         #Do the calculation only for arcs have positiv extend => switch angles
         if self.ext >= 0:
@@ -581,7 +573,7 @@ class CCArcGeo(ArcGeo):
                 self.wrap(e_ang - 1.5 * pi, 1)):
             Pa.y = min(self.Pa.y, self.Pe.y)
        
-        self.BB = BoundingBoxClass(Pa=Pa, Pe=Pe)
+        self.BB = BoundingBox(Pa=Pa, Pe=Pe)
         
     def wrap(self, angle, isend=0):
         """
@@ -642,11 +634,11 @@ class CCArcGeo(ArcGeo):
         
         #If both circles have the same center and radius
         if abs(O_dis) < tol/2 and abs(self.r-other.r) < tol/2:
-            Pi1=IPointClass(x=self.Pa.x,y=self.Pa.y,
+            Pi1=IPoint(x=self.Pa.x,y=self.Pa.y,
                          v1=0.0, v2=-1.0,
                         geo1=self, geo2=other)
             
-            Pi2=IPointClass(x=self.Pe.x,y=self.Pe.y,
+            Pi2=IPoint(x=self.Pe.x,y=self.Pe.y,
                          v1=1.0, v2=0.0,
                         geo1=self, geo2=other)
             
@@ -674,7 +666,7 @@ class CCArcGeo(ArcGeo):
         (other.O.y - self.O.y) * \
         (pow(self.r, 2) - pow(other.r, 2)) / (2 * pow(O_dis, 2))
         
-        Pi1 = IPointClass(x=xbase + (other.O.y - self.O.y) / \
+        Pi1 = IPoint(x=xbase + (other.O.y - self.O.y) / \
                           (2 * pow(O_dis, 2)) * root,
                     y=ybase - (other.O.x - self.O.x) / \
                     (2 * pow(O_dis, 2)) * root,
@@ -684,7 +676,7 @@ class CCArcGeo(ArcGeo):
         Pi1.v1 = self.dif_ang(self.Pa, Pi1, self.ext)/self.ext
         Pi1.v2 = other.dif_ang(other.Pa, Pi1, other.ext)/other.ext
 
-        Pi2 = IPointClass(x=xbase - (other.O.y - self.O.y) / \
+        Pi2 = IPoint(x=xbase - (other.O.y - self.O.y) / \
                          (2 * pow(O_dis, 2)) * root,
                     y=ybase + (other.O.x - self.O.x) / \
                     (2 * pow(O_dis, 2)) * root,
@@ -710,7 +702,7 @@ class CCArcGeo(ArcGeo):
         return 1e99
 
 
-#    def isTIP(self, Point=PointClass, tol=0.01, type='all'):
+#    def isTIP(self, Point=Point, tol=0.01, type='all'):
 #        """
 #        Checks if the Point is a Local Self Intersection Point of the CCArcGeo
 #        @param Point: The Point which shall be checked
@@ -757,7 +749,7 @@ class CCArcGeo(ArcGeo):
         else:
             return -1
         
-    def split_into_2geos(self, ipoint=PointClass()):
+    def split_into_2geos(self, ipoint=Point()):
         """
         Splits the given geometry into 2 not self intersection geometries. The
         geometry will be splitted between ipoint and Pe.
@@ -1023,10 +1015,10 @@ class CCLineGeo(LineGeo):
         """
         Calculated the BoundingBox of the geometry and saves it into self.BB
         """
-        Pa = PointClass(x=min(self.Pa.x, self.Pe.x), y=min(self.Pa.y, self.Pe.y))
-        Pe = PointClass(x=max(self.Pa.x, self.Pe.x), y=max(self.Pa.y, self.Pe.y))
+        Pa = Point(x=min(self.Pa.x, self.Pe.x), y=min(self.Pa.y, self.Pe.y))
+        Pe = Point(x=max(self.Pa.x, self.Pe.x), y=max(self.Pa.y, self.Pe.y))
         
-        self.BB = BoundingBoxClass(Pa=Pa, Pe=Pe)
+        self.BB = BoundingBox(Pa=Pa, Pe=Pe)
         
     def find_inter_points(self, other=[], tol=0.01):
         """
@@ -1084,7 +1076,7 @@ class CCLineGeo(LineGeo):
         except:
             return []
             
-        return [IPointClass(x=self.Pa.x + v1 * dx1,
+        return [IPoint(x=self.Pa.x + v1 * dx1,
                           y=self.Pa.y + v1 * dy1,
                           v1=v1,
                           v2=v2,
@@ -1116,7 +1108,7 @@ class CCLineGeo(LineGeo):
         v1 = (-b + sqrt(root)) / (2 * a)
         v2 = (-b - sqrt(root)) / (2 * a)
         
-        Pi1 = IPointClass(x=self.Pa.x + v1 * Ldx,
+        Pi1 = IPoint(x=self.Pa.x + v1 * Ldx,
                        y=self.Pa.y + v1 * Ldy,
                        geo1=self, geo2=Arc,
                        v1=v1, v2=0.0)
@@ -1127,7 +1119,7 @@ class CCLineGeo(LineGeo):
         if(root == 0):
             return [Pi1] 
             
-        Pi2 = IPointClass(x=self.Pa.x + v2 * Ldx,
+        Pi2 = IPoint(x=self.Pa.x + v2 * Ldx,
                        y=self.Pa.y + v2 * Ldy,
                        geo1=self, geo2=Arc,
                        v1=v2, v2=0.0)
@@ -1213,7 +1205,7 @@ class CCLineGeo(LineGeo):
             #segment has an end Point inside the segment
             return sqrt(dotProd(v,v) - (t*t)/dotProd(d,d));
                      
-    def split_into_2geos(self, ipoint=PointClass()):
+    def split_into_2geos(self, ipoint=Point()):
         """
         Splits the given geometry into 2 not self intersection geometries. The
         geometry will be splitted between ipoint and Pe.
@@ -1221,7 +1213,7 @@ class CCLineGeo(LineGeo):
         @return: A list of 2 CCLineGeo's will be returned.
         """
         #The Point where the geo shall be splitted
-        spoint = PointClass(x=(ipoint.x + self.Pe.x) / 2,
+        spoint = Point(x=(ipoint.x + self.Pe.x) / 2,
                           y=(ipoint.y + self.Pe.y) / 2)
         
         return self.split_geo_at_point(spoint)
@@ -1405,16 +1397,16 @@ class CCLineGeo(LineGeo):
             
         return geos
     
-class IPointClass(PointClass):
+class IPoint(Point):
     """
     Standard Point Class Inherited for Intersection Point Class.
     """ 
     def __init__(self, x=0, y=0,v1=0, v2=0, geo1=None, geo2=None):
         """
-        Standard Method to initialise the IPointClass
+        Standard Method to initialise the IPoint
         """
         
-        PointClass.__init__(self, x=x,y=y)
+        Point.__init__(self, x=x,y=y)
         self.v1=v1
         self.v2=v2
         self.geo1=geo1
@@ -1470,8 +1462,6 @@ class IPointClass(PointClass):
             
         return v>1.0
     
-
-       
     
 def dotProd(P1,P2):
     """

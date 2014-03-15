@@ -15,6 +15,10 @@ Special purpose canvas including all required plotting function etc.
 from PyQt4 import QtCore, QtGui
 from Core.Point import Point
 from Core.Shape import ShapeClass
+from Core.LineGeo import LineGeo
+
+from Core.EntitieContent import EntitieContentClass
+from PostPro.CutComp import ShapeOffsetClass
 
 from Gui.WpZero import WpZero
 from Gui.Arrow import Arrow
@@ -459,8 +463,120 @@ class MyDropDownMenu(QtGui.QMenu):
         for shape in shapes:
             logger.debug(_('Calling the createOffsetCurve Instance of the shape class for shape nr: %s')\
                              %(shape.nr))
-            shape.createOffsetCurve()
-            self.MyGraphicsScene.plotoffsetShapes(shape)
+
+
+        
+            BaseEntitie = EntitieContentClass(Nr= -1, Name='OffsetCurves',
+                                            parent=None,
+                                            children=[],
+                                            p0=Point(x=0.0, y=0.0),
+                                            pb=Point(x=0.0, y=0.0),
+                                            sca=[1, 1, 1],
+                                            rot=0.0)
+
+
+            OffShape = ShapeOffsetClass()
+            shape.offsetShapes=OffShape.do_compensation(shape=shape,radius=0.5, direction=42, shape_nr=1)
+            
+
+    #        offsetShape=ShapeClass(nr=self.nr, closed=self.closed, cut_cor=self.cut_cor,
+    #                               length=self.length, parent=BaseEntitie, geos=[], 
+    #                               axis3_start_mill_depth=self.axis3_start_mill_depth,
+    #                               axis3_mill_depth=self.axis3_mill_depth)
+    
+    
+            for offsetShape in shape.offsetShapes:
+                print offsetShape
+
+                offsetShape.pen=QtGui.QPen(QtCore.Qt.darkGray,2)
+                offsetShape.pen.setCosmetic(True)
+                offsetShape.sel_pen=QtGui.QPen(QtCore.Qt.magenta,2) #,QtCore.Qt.DashLine
+                offsetShape.sel_pen.setCosmetic(True)
+                offsetShape.dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+                offsetShape.dis_pen.setCosmetic(True)
+                offsetShape.sel_dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+                offsetShape.sel_dis_pen.setCosmetic(True)
+                
+        
+                offsetShape.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
+                offsetShape.disabled=False
+
+        
+#        
+
+            
+#            testshape=ShapeClass(nr=shape.nr, closed=shape.closed, cut_cor=shape.cut_cor,
+#                       length=shape.length, parent=BaseEntitie, geos=[], 
+#                       axis3_start_mill_depth=shape.axis3_start_mill_depth,
+#                       axis3_mill_depth=shape.axis3_mill_depth)
+#            
+#            testshape.pen=QtGui.QPen(QtCore.Qt.darkGray,2)
+#            testshape.pen.setCosmetic(True)
+#            testshape.sel_pen=QtGui.QPen(QtCore.Qt.magenta,2) #,QtCore.Qt.DashLine
+#            testshape.sel_pen.setCosmetic(True)
+#            testshape.dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+#            testshape.dis_pen.setCosmetic(True)
+#            testshape.sel_dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+#            testshape.sel_dis_pen.setCosmetic(True)
+#            testshape.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
+#            testshape.disabled=False
+#            
+#            
+#            testshape.geos = []
+#        
+#        
+#            """
+#            Adding some offset to the curve in order to see it
+#            """
+#            offset=Point(x=1.0,y=1.0)
+#            
+#            """Fist Startpoint of the Geometry is the Startpoint of the Shape too
+#            This is a function just getting self.geos[0].Pa in absolute coordinates"""
+#            Pa, dummy=shape.get_st_en_points()
+#              
+#            """Geometries are order Therefore The Endpoint of geo[i] will be the start
+#            point of the geo[i+1]"""
+#            for geo in shape.geos:
+#                """Getting the absolute geometrie (required since geometrie may be
+#                the geometries of entities which are used different time by inserts"""
+#                abs_geo=geo.make_abs_geo(shape.parent, 0)
+#                Pe=abs_geo.Pe
+#                
+#                """
+#                Just to show it
+#                """
+#                Line=LineGeo(Pa+offset,Pe+offset)
+#                testshape.geos.append(Line)
+#                
+#                """Endpoint is the new start Point"""
+#                Pa=abs_geo.Pe
+#            
+#            """If the shape is closed the endpoint is the startpoint too"""
+#            if shape.closed:
+#                testshape.geos[-1].Pe=testshape.geos[0].Pa
+#            shape.offsetShapes.append(testshape)
+        
+        
+        
+            self.MyGraphicsScene.plotoffsetShapes(shape)         
+            
+            
+            
+#            
+#        
+#        P1=Point(x=10.0,y=20.0)
+#        P2=Point(x=20.0,y=20.0)
+#        P3=Point(x=30.0,y=-10.0)
+#        
+#        geo1=LineGeo(P1,P2)
+#        geo2=LineGeo(P2,P3)
+#        geo3=LineGeo(P3,P1)
+#        
+#        offsetShape.geos = [geo1,geo2,geo3]
+        
+
+        
+        
  
 class MyGraphicsScene(QtGui.QGraphicsScene): 
     """
@@ -744,6 +860,7 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
         """
         
         for offsetShape in shape.offsetShapes:
+            print offsetShape
             self.addItem(offsetShape)
             offsetShape.make_papath()
             offsetShape.show()
