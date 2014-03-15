@@ -3,6 +3,9 @@ import logging
 logger = logging.getLogger("Gui.AboutDialog") 
 
 class myAboutDialog(QtGui.QDialog):
+    """
+    class myAboutDialog
+    """
     
     def __init__(self, title="Test", message="Test Text"):
         super(myAboutDialog, self).__init__()
@@ -12,12 +15,15 @@ class myAboutDialog(QtGui.QDialog):
         
         self.initUI()
         
-    def initUI(self):      
-
+    def initUI(self):
+        """
+        initUI()
+        """
+        
         vbox = QtGui.QVBoxLayout(self)
         grid1 = QtGui.QGridLayout()
         grid1.setSpacing(10)
-
+        
         self.text = QtGui.QTextBrowser()
         self.text.setReadOnly(True)
         self.text.setOpenExternalLinks(True)
@@ -26,10 +32,11 @@ class myAboutDialog(QtGui.QDialog):
         self.text.ensureCursorVisible()
         
         vbox.addWidget(self.text)
-       
+        
         self.setLayout(vbox)
         self.setMinimumSize(550, 450)
         self.resize(550, 600)
+        self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
         self.setWindowTitle(self.title)
         iconWT = QtGui.QIcon()
         iconWT.addPixmap(QtGui.QPixmap(":images/DXF2GCODE-001.ico"),
@@ -37,4 +44,4 @@ class myAboutDialog(QtGui.QDialog):
         self.setWindowIcon(QtGui.QIcon(iconWT))
         
         self.exec_()
-    
+        

@@ -9,8 +9,8 @@ Special purpose canvas including all required plotting function etc.
 @since:  22.04.2011
 @license: GPL
 """
-from PyQt4 import QtCore, QtGui
-import Core.Globals as g
+from PyQt4 import QtGui
+#import Core.Globals as g
 import Core.constants as c
 
 class myMessageBox(QtGui.QTextBrowser):
@@ -36,8 +36,8 @@ class myMessageBox(QtGui.QTextBrowser):
 
     def write(self,charstr):
         """
-        The function is called by the window logger to write the log message to
-        the Messagebox
+        The function is called by the window logger to write
+        the log message to the Messagebox
         @param charstr: The log message which will be written.
         """
 

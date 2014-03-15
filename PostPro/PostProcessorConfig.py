@@ -13,7 +13,7 @@
 
 import os
 
-from Core.configobj import ConfigObj,flatten_errors
+from Core.configobj import ConfigObj, flatten_errors
 from Core.validate import Validator
 
 #from dotdictlookup import DictDotLookup
@@ -23,15 +23,17 @@ import Core.constants as c
 import Core.Globals as g
 from d2gexceptions import *
 
+from PyQt4 import QtCore, QtGui
+
 import logging
 logger = logging.getLogger("PostPro.PostProcessorConfig") 
 
-POSTPRO_VERSION = "2"
+POSTPRO_VERSION = "4"
 """
 version tag - increment this each time you edit CONFIG_SPEC
 
 compared to version number in config file so
-old versions are recognized and skipped"
+old versions are recognized and skipped
 """
     
 POSTPRO_SPEC = str('''
@@ -46,8 +48,8 @@ POSTPRO_SPEC = str('''
     str(POSTPRO_VERSION) + '")\n' + \
 '''
     [General]
-    output_format = string(default=".ngx")
-    output_text = string(default="G-CODE for EMC2")
+    output_format = string(default=".ngc")
+    output_text = string(default="G-CODE for LinuxCNC")
     output_type = string(default="g-code")
     
     abs_export = boolean(default=True)
@@ -56,9 +58,10 @@ POSTPRO_SPEC = str('''
     export_ccw_arcs_only = boolean(default=False)
     max_arc_radius = float(default=10000)
     
-
-    code_begin=string(default="G21 (Unit in mm) G90 (Absolute distance mode) G64 P0.01 (Exact Path 0.001 tol.) G17 G40 (Cancel diameter comp.) G49 (Cancel length comp.)")                    
-    code_end=string(default="M2 (Prgram end)")
+    code_begin_units_mm = string(default="G21 (Units in millimeters)")
+    code_begin_units_in = string(default="G20 (Units in inches)")
+    code_begin = string(default="G90 (Absolute programming) G64 (Default cutting) G17 (XY plane) G40 (Cancel radius comp.) G49 (Cancel length comp.)")
+    code_end = string(default="M2 (Program end)")
     
     [Number_Format]
     pre_decimals = integer(default=4)
@@ -85,37 +88,49 @@ POSTPRO_SPEC = str('''
     cutter_comp_off = string(default=G40%nl)
     cutter_comp_left = string(default=G41%nl)
     cutter_comp_right = string(default=G42%nl)
-    pre_shape_cut= string(default=M3 M8%nl)
-    post_shape_cut=string(default=M9 M5%nl)
+    pre_shape_cut = string(default=M3 M8%nl)
+    post_shape_cut = string(default=M9 M5%nl)
     comment = string(default=%nl(%comment)%nl)              
 
 ''').splitlines()  
 """ format, type and default value specification of the global config file"""
 
 
-class MyPostProConfig:
+class MyPostProConfig(QtCore.QObject):
     """
     This class hosts all functions related to the PostProConfig File.
     """
-    def __init__(self,filename='postpro_config.cfg'):
+    def __init__(self, filename = 'postpro_config' + c.CONFIG_EXTENSION):
         """
         initialize the varspace of an existing plugin instance
         init_varspace() is a superclass method of plugin
         @param filename: The filename for the creation of a new config
         file and the filename of the file to read config from.
         """
+        QtCore.QObject.__init__(self)
         
         self.folder = os.path.join(g.folder, c.DEFAULT_POSTPRO_DIR)
-        self.filename =os.path.join(self.folder, filename)
+        self.filename = os.path.join(self.folder, filename)
         
         self.default_config = False # whether a new name was generated
         self.var_dict = dict()
         self.spec = ConfigObj(POSTPRO_SPEC, interpolation=False, list_values=False, _inspec=True)
 
+    def tr(self, string_to_translate):
+        """
+        Translate a string using the QCoreApplication translation framework
+        @param: string_to_translate: a unicode string    
+        @return: the translated unicode string if it was possible to translate
+        """
+        return unicode(QtGui.QApplication.translate("MyPostProConfig",
+                                                    string_to_translate,
+                                                    None,
+                                                    QtGui.QApplication.UnicodeUTF8)) 
+
     def load_config(self):
         """
         This method tries to load the defined postprocessor file given in 
-        self.filename. If this fail it will create a new one 
+        self.filename. If this fails it will create a new one 
         """
 
         try:
@@ -126,7 +141,7 @@ class MyPostProConfig:
             validate_errors = flatten_errors(self.var_dict, result)
 
             if validate_errors:
-                g.logger.logger.error("errors reading %s:" % (self.filename))
+                g.logger.logger.error(self.tr("errors reading %s:") % (self.filename))
             for entry in validate_errors:
                 section_list, key, error = entry
                 if key is not None:
@@ -135,11 +150,11 @@ class MyPostProConfig:
                     section_list.append('[missing section]')
                 section_string = ', '.join(section_list)
                 if error == False:
-                    error = 'Missing value or section.'
+                    error = self.tr('Missing value or section.')
                 g.logger.logger.error( section_string + ' = ' + error)       
 
             if validate_errors:
-                raise BadConfigFileError,"syntax errors in postpro_config file"
+                raise BadConfigFileError, self.tr("syntax errors in postpro_config file")
                 
             # check config file version against internal version
 
@@ -152,24 +167,24 @@ class MyPostProConfig:
         except VersionMismatchError, values:
             raise VersionMismatchError, (fileversion, POSTPRO_VERSION)
                    
-        except Exception,inst:
+        except Exception, inst:
             logger.error(inst)               
-            (base,ext) = os.path.splitext(self.filename)
+            (base, ext) = os.path.splitext(self.filename)
             badfilename = base + c.BAD_CONFIG_EXTENSION
-            logger.debug("trying to rename bad cfg %s to %s" % (self.filename,badfilename))
+            logger.debug(self.tr("trying to rename bad cfg %s to %s") % (self.filename, badfilename))
             try:
-                os.rename(self.filename,badfilename)
-            except OSError,e:
-                logger.error("rename(%s,%s) failed: %s" % (self.filename,badfilename,e.strerror))
+                os.rename(self.filename, badfilename)
+            except OSError, e:
+                logger.error(self.tr("rename(%s,%s) failed: %s") % (self.filename, badfilename, e.strerror))
                 raise
             else:
-                logger.debug("renamed bad varspace %s to '%s'" %(self.filename,badfilename))
+                logger.debug(self.tr("renamed bad varspace %s to '%s'") % (self.filename, badfilename))
                 self.create_default_config()
                 self.default_config = True
-                logger.debug("created default varspace '%s'" %(self.filename))
+                logger.debug(self.tr("created default varspace '%s'") % (self.filename))
         else:
             self.default_config = False
-            logger.debug("read existing varspace '%s'" %(self.filename))
+            logger.debug(self.tr("read existing varspace '%s'") % (self.filename))
 
         # convenience - flatten nested config dict to access it via self.config.sectionname.varname
         self.var_dict.main.interpolation = False # avoid ConfigObj getting too clever
@@ -177,7 +192,7 @@ class MyPostProConfig:
 
     def make_settings_folder(self): 
         """
-        This method creates the  postprocessor settings folder if necessary
+        This method creates the postprocessor settings folder if necessary
         """ 
         try: 
             os.mkdir(self.folder) 
@@ -186,7 +201,7 @@ class MyPostProConfig:
 
     def create_default_config(self):
         """
-        If no postprocessor config file exist this function is called in order
+        If no postprocessor config file exists this function is called 
         to generate the config file based on its specification.
         """
         #check for existing setting folder or create one
@@ -207,9 +222,12 @@ class MyPostProConfig:
 #        self.var_dict.write()   
 #    
     def print_vars(self):
+        """
+        Print all the variables with their values
+        """
         print "Variables:"
-        for k,v in self.var_dict['Variables'].items():
-            print k," = ",v
+        for k, v in self.var_dict['Variables'].items():
+            print k, " = ", v
             
 
 class DictDotLookup(object):
@@ -241,5 +259,3 @@ class DictDotLookup(object):
 
 #    def __repr__(self):
 #        return pprint.pformat(self.__dict__)
-
-

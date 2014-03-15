@@ -12,7 +12,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA  02110-1301, USA.
 
 '''
 All global constants are initialized in this module.
@@ -24,32 +25,32 @@ see http://code.activestate.com/recipes/65207/ for module const
 @newfield sideeffect: Side effect, Side effects
 
 @purpose:  initialization of the global constants used within the other modules.
-@author: Christian Kohlöffel 
+@author: Christian Kohlöffel
 @since:  21.12.2010
 @license: GPL
+
 '''
 
 import logging
 
 # Global Variables
-APPNAME = "dxf2gcode"
-VERSION = "pyQT Beta"
-DATE = "2012-09-25"
+APPNAME = "DXF2GCODE"
+VERSION = "PyQt4 Beta"
+
+
+DATE     =   "$Date::                     $"
+REVISION =   "$Rev::                      $"
+AUTHOR   =  u"$Author::                                  $"
 
 CONFIG_EXTENSION = '.cfg'
 PY_EXTENSION = '.py'
 
-#rename unreadable config/varspace files to .bad
+# Rename unreadable config/varspace files to .bad
 BAD_CONFIG_EXTENSION = '.bad'
-DEFAULT_CONFIG_DIR = 'config' 
-
+DEFAULT_CONFIG_DIR = 'config'
 DEFAULT_POSTPRO_DIR = 'postpro_config'
 
 # log related
 DEFAULT_LOGFILE = 'dxf2gcode.log'
 STARTUP_LOGLEVEL = logging.DEBUG
-#PRT = logging.INFO  
-
-
-
-
+# PRT = logging.INFO

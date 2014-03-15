@@ -43,16 +43,18 @@ class EntitieContentClass:
         return cmp(self.EntNr, other.EntNr)        
         
     def __str__(self):
-        return ('\ntype:        %s' %self.type) +\
-               ('\nNr :      %i' %self.Nr) +\
-               ('\nName:     %s' %self.Name)+\
-               ('\np0:          %s' %self.p0)+\
-               ('\npb:          %s' %self.pb)+\
-               ('\nsca:         %s' %self.sca)+\
-               ('\nrot:         %s' %self.rot)+\
-               ('\nchildren:    %s' %self.children)
+        return ('\ntype:        %s' % self.type) +\
+               ('\nNr :      %i' % self.Nr) +\
+               ('\nName:     %s' % self.Name)+\
+               ('\np0:          %s' % self.p0)+\
+               ('\npb:          %s' % self.pb)+\
+               ('\nsca:         %s' % self.sca)+\
+               ('\nrot:         %s' % self.rot)+\
+               ('\nchildren:    %s' % self.children)
             
-    #Hinzufuegen der Kontur zu den Entities
     def addchild(self,child):
+        """
+        addchild()
+        """
         self.children.append(child)
   

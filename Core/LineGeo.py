@@ -23,31 +23,38 @@
 
 
 from math import sqrt
-from Point import Point
-from PyQt4 import QtGui
+from PyQt4 import QtCore, QtGui
 
 import logging
-logger=logging.getLogger("Core.LineGeo") 
+logger = logging.getLogger("Core.LineGeo") 
+
+import copy
 
 #Length of the cross.
 dl = 0.2
 DEBUG = 1
 
-class LineGeo:
+class LineGeo(QtCore.QObject):
     """
     Standard Geometry Item used for DXF Import of all geometries, plotting and
     G-Code export.
     """ 
     def __init__(self, Pa, Pe):
         """
-        Standard Method to initialise the LineGeo
+        Standard Method to initialize the LineGeo. 
+        @param Pa: The Start Point of the line
+        @param Pe: the End Point of the line
         """
         self.type = "LineGeo"
         self.Pa = Pa
         self.Pe = Pe
         self.col = 'Black'
         self.length = self.Pa.distance(self.Pe)
-        
+
+    def __deepcopy__(self, memo):
+        return LineGeo(copy.deepcopy(self.Pa, memo),
+                       copy.deepcopy(self.Pe, memo))
+
     def __str__(self):
         """ 
         Standard method to print the object
@@ -58,6 +65,13 @@ class LineGeo:
                ("\nPe : %s" % self.Pe) + \
                ("\nlength: %0.5f" % self.length)        
 
+    def toShortString(self):
+        """ 
+        Method to print only start and end point of the line 
+        @return: A string
+        """ 
+        return ("(%f, %f) -> (%f, %f)" % (self.Pa.x, self.Pa.y, self.Pe.x, self.Pe.y));        
+
     def reverse(self):
         """ 
         Reverses the direction of the arc (switch direction).
@@ -67,6 +81,17 @@ class LineGeo:
         
         self.Pa = Pe
         self.Pe = Pa
+
+    def tr(self, string_to_translate):
+        """
+        Translate a string using the QCoreApplication translation framework
+        @param: string_to_translate: a unicode string    
+        @return: the translated unicode string if it was possible to translate
+        """
+        return unicode(QtGui.QApplication.translate("ReadDXF",
+                                                    string_to_translate,
+                                                    None,
+                                                    QtGui.QApplication.UnicodeUTF8))
    
     def make_abs_geo(self, parent=None, reverse=0):
         """
@@ -86,7 +111,7 @@ class LineGeo:
         return abs_geo
     
         
-    def add2path(self, papath=None, parent=None): 
+    def add2path(self, papath=None, parent=None):
         """
         Plots the geometry of self into defined path for hit testing..
         @param hitpath: The hitpath to add the geometrie
@@ -94,19 +119,15 @@ class LineGeo:
         @param tolerance: The tolerance to be added to geometrie for hit
         testing.
         """
-        logger.debug("Adding line to path")
 
-        abs_geo=self.make_abs_geo(parent, 0)
-        
-        logger.debug("Adding line to path : %s" %self)
-        
+        abs_geo = self.make_abs_geo(parent, 0)
         papath.lineTo(abs_geo.Pe.x, -abs_geo.Pe.y)
         #self.add2hitpath(hitpath=papath,parent=parent, tolerance=5)
 
 #    def add2hitpath(self, hitpath=None, parent=None, tolerance=None):
 #        """
-#        Plots the geometry of self into defined path for hit testing. Refer
-#        to http://stackoverflow.com/questions/11734618/check-if-point-exists-in-qpainterpath
+#        Plots the geometry of self into defined path for hit testing. Refer to
+#        http://stackoverflow.com/questions/11734618/check-if-point-exists-in-qpainterpath
 #        for description
 #        @param hitpath: The hitpath to add the geometrie
 #        @param parent: The parent of the shape
@@ -133,15 +154,15 @@ class LineGeo:
 #        right2 = abs_geo.Pe + rightOffset
 #        
 #        hitpath2=QtGui.QPainterPath()
-#        hitpath2.moveTo(left1.x,left1.y)
-#        hitpath2.lineTo(left2.x,left2.y)
-#        hitpath2.lineTo(right2.x,right2.y)
+#        hitpath2.moveTo(left1.x, left1.y)
+#        hitpath2.lineTo(left2.x, left2.y)
+#        hitpath2.lineTo(right2.x, right2.y)
 #        hitpath2.lineTo(right1.x, right1.y)
 #        hitpath2.lineTo(left1.x, left1.y)
 #        hitpath +=hitpath2
 #        
 #        hitpath3=QtGui.QPainterPath()
-#        hitpath +=hitpath3.addEllipse(abs_geo.Pe.x,abs_geo.Pe.y,tolerance, tolerance)
+#        hitpath +=hitpath3.addEllipse(abs_geo.Pe.x, abs_geo.Pe.y, tolerance, tolerance)
 #        
     def get_start_end_points(self, direction, parent=None):
         """
@@ -150,25 +171,25 @@ class LineGeo:
         @return: a list of Point and angle 
         """
         if not(direction):
-            punkt=self.Pa.rot_sca_abs(parent=parent)
-            punkt_e=self.Pe.rot_sca_abs(parent=parent)
-            angle=punkt.norm_angle(punkt_e)
+            punkt = self.Pa.rot_sca_abs(parent=parent)
+            punkt_e = self.Pe.rot_sca_abs(parent=parent)
+            angle = punkt.norm_angle(punkt_e)
         elif direction:
-            punkt_a=self.Pa.rot_sca_abs(parent=parent)
-            punkt=self.Pe.rot_sca_abs(parent=parent)
-            angle=punkt.norm_angle(punkt_a)
+            punkt_a = self.Pa.rot_sca_abs(parent=parent)
+            punkt = self.Pe.rot_sca_abs(parent=parent)
+            angle = punkt.norm_angle(punkt_a)
         return punkt, angle
     
-    def Write_GCode(self,parent=None, PostPro=None):
+    def Write_GCode(self, parent=None, PostPro=None):
         """
-        To be calles if a LineGeo shall be wirtten to the PostProcessor.
+        To be called if a LineGeo shall be written to the PostProcessor.
         @param pospro: The used Posprocessor instance
         @return: a string to be written into the file
         """
-        anf, anf_ang=self.get_start_end_points(0,parent)
-        ende, end_ang=self.get_start_end_points(1,parent)
+        anf, anf_ang = self.get_start_end_points(0, parent)
+        ende, end_ang = self.get_start_end_points(1, parent)
 
-        return PostPro.lin_pol_xy(anf,ende)
+        return PostPro.lin_pol_xy(anf, ende)
 
     def distance2point(self, Point):
         """

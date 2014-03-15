@@ -12,7 +12,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA  02110-1301, USA.
 '''
 
 user defined exceptions
@@ -22,7 +23,7 @@ Michael Haberler  20.12.2009
 
 class BadConfigFileError(SyntaxError):
     """
-    syntax error in .cfg file
+    syntax error in config file
     """
     def __init__(self, value):
         print "bin hier"
@@ -32,15 +33,15 @@ class BadConfigFileError(SyntaxError):
     
 class VersionMismatchError(Exception):
     """
-    syntax error in .cfg file
+    version mismatch in config file
     """
-    def __init__(self,  fileversion, CONFIG_VERSION):
+    def __init__(self, fileversion, CONFIG_VERSION):
         self.fileversion = fileversion
         self.CONFIG_VERSION = CONFIG_VERSION
     def __str__(self):
-        return repr('config file vesions do not match - internal: %s,'
+        return repr('config file versions do not match - internal: %s,'
                     ' config file %s, delete existing file to resolve issue'
-                     %(self.CONFIG_VERSION, self.fileversion))
+                    % (self.CONFIG_VERSION, self.fileversion))
 
 class OptionError(SyntaxError):
     """
