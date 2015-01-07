@@ -1,107 +1,127 @@
-# -*- coding: iso-8859-15 -*-
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-'''
+# -*- coding: utf-8 -*-
 
-Michael Haberler  20.12.2009
-'''
+############################################################################
+#   
+#   Copyright (C) 2009-2014
+#    Michael Haberler
+#   
+#   This file is part of DXF2GCODE.
+#   
+#   DXF2GCODE is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#   
+#   DXF2GCODE is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#   
+#   You should have received a copy of the GNU General Public License
+#   along with DXF2GCODE.  If not, see <http://www.gnu.org/licenses/>.
+#   
+############################################################################
+
 import sys
-import time
 import logging
+logger = logging.getLogger(__name__)
 
 import Core.Globals as g
 
-class LoggerClass():
+from PyQt4 import QtCore
+
+class LoggerClass(QtCore.QObject):
     '''
     handle 3 log streams:
         console
         file
         message window
     '''
-    def __init__(self, rootlogger, console_loglevel):
-        self.file_handler = None
-        self.window_handler = None
-        self.rootlogger = rootlogger
-        self.rootlogger.setLevel(logging.DEBUG)
+    def __init__(self,root_logger):
+        """
+        Initilaishation of the Logger Class. Only the root logger is initialized
+        and the console handler ist set. All other handlers needs to be set later
+        since the config / window is not present during the start already. 
+        """
+        QtCore.QObject.__init__(self)
         
-        # always log to the console window
-        self.console_handler = logging.StreamHandler()
-        self.console_handler.setFormatter(logging.Formatter("%(name)-25s %(funcName)-12s %(lineno)-3d:  - %(message)s"))
-        self.console_handler.setLevel(self._cvtlevel(console_loglevel))
-        self.console_handler.addFilter(FilterModule())
+        self.root_logger=root_logger
         
-        self.rootlogger.addHandler(self.console_handler)
-
-    # allow  'INFO' or logging.INFO  args
-    def _cvtlevel(self, level):
-        if isinstance(level, basestring):
-            return logging._levelNames[level]
-        else:
-            return level
-
-    # logging to file + window - explicitely enabled
-    def add_file_logger(self, logfile, log_level):
+        """ 
+        The level of the root_logger needs to be the highest in order to get 
+        all messages into the handlers. The handles may have higher logging level
+        """
+        root_logger.setLevel(logging.DEBUG)
         
-        self.file_handler = logging.FileHandler(logfile, 'w')  # recreate 
-        self.file_handler.setFormatter(logging.Formatter("%(levelname)-10s %(module)-15s %(name)-15s %(funcName)-10s %(lineno)-4d:  - %(message)s"))
-        self.file_handler.setLevel(self._cvtlevel(log_level))
-        #self.logger.addHandler(self.file_handler)
+        self.console_handler = logging.StreamHandler(sys.stderr)
+        self.console_handler.setLevel(logging.ERROR)
+        
+        formatter=logging.Formatter("%(levelname)-10s %(name)-15s %(funcName)-10s %(lineno)-4d:  - %(message)s")
+        self.console_handler.setFormatter(formatter)
+        root_logger.addHandler(self.console_handler)
+        
+        
+    def set_console_handler_loglevel(self):
+        """
+        This function is used to reset the Loglevel after the config file hase 
+        been loaded.
+        """
+        self.console_handler.setLevel(self._cvtlevel(g.config.vars.Logging['console_loglevel']))
     
-    def change_file_logging(self, onoff):
-        if onoff:
-            if not hasattr(self.logger, 'file_handler'):
-                self.add_file_logger(g.config.logfile, g.config.file_loglevel)
-            self.rootlogger.addHandler(self.file_handler)
-            self.rootlogger.info("file logging started at %s", time.asctime())
-        else:
-            self.rootlogger.info("file logging stopped at %s", time.asctime())
-            self.rootlogger.removeHandler(self.file_handler)
-    
-    def add_window_logger(self, log_level):
+    def add_window_logger(self,  stream=sys.stderr):
+        """
+        Add the logger, which may be used to log to the window. This stream will
+        be shown in the messagebox in the canvas window.
+        @param stream: The stream which shall be used for writing. Here the 
+        window will be used. This Class needs a function "def write(self, charstr) 
+        {DEBUG, INFO, WARNING,  ERROR, CRITICAL}
+        """
         
-        self.window_handler = logging.StreamHandler()
-        if log_level==logging.INFO:
+        self.window_handler = logging.StreamHandler(stream=stream)
+        self.window_handler.setLevel(self._cvtlevel(g.config.vars.Logging['window_loglevel']))
+        
+        if g.config.vars.Logging['window_loglevel'] == "INFO":
             self.window_handler.setFormatter(logging.Formatter("%(message)s"))
         else:
-            self.window_handler.setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
-            
-        self.window_handler.setLevel(self._cvtlevel(log_level))
-        self.rootlogger.addHandler(self.window_handler)
-        
-    def set_window_logstream(self, stream=sys.stderr):
-        if self.window_handler:
-            self.window_handler.stream = stream
-        
-    def set_window_loglevel(self, log_level):
-        if self.window_handler:
-            self.window_handler.setLevel(self._cvtlevel(log_level))
-    
-    def set_file_loglevel(self, log_level):
-        if self.file_handler:
-            self.file_handler.setLevel(self._cvtlevel(log_level))
-                      
-    def set_console_loglevel(self, log_level):
-        if self.console_handler:
-            self.console_handler.setLevel(self._cvtlevel(log_level))
-            
+            formatter=logging.Formatter("%(levelname)s - %(message)s")
+            self.window_handler.setFormatter(formatter)
+                   
+        self.root_logger.addHandler(self.window_handler)  
 
+             
+
+    def add_file_logger(self):
+        """
+        Add the logger, which may be used to log to a dedicated file. This logger
+        will be enabled all the time.
+        """
+        
+        self.file_handler = logging.FileHandler(g.config.vars.Logging['logfile'], 'w')  #create 
+        self.file_handler.setLevel(self._cvtlevel(g.config.vars.Logging['file_loglevel']))
+        self.file_handler.setFormatter(logging.Formatter("%(levelname)-10s %(name)-15s %(funcName)-10s %(lineno)-4d:  - %(message)s"))
+        self.root_logger.addHandler(self.file_handler)
+       
+ 
+    def _cvtlevel(self, level):
+        """
+        This function converts the given logging levels as they are:
+        {DEBUG, INFO, WARNING,  ERROR, CRITICAL} to a conform format which is
+        required by the vunction e.g. logging.DEBUG
+        @param level: The String with the Level
+        @return: Returns the converted string acc. to logging needs. 
+        """
+        if isinstance(level, basestring):    
+            return logging._levelNames[level]
+        else:
+            return level 
+       
+     
 
 class FilterModule(logging.Filter): 
     def filter(self, record): 
+        """A dedicated filter may be added here for debug use
+        @param record: The log message is posted here in order to do some checks
+        @return: If the value is true it will be shown in the log 
+        """
         return True
-
-
-
-
+    
