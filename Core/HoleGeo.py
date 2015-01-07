@@ -1,24 +1,26 @@
-#!/usr/bin/python
-# -*- coding: ISO-8859-1 -*-
-#
-#Programmers: Robert Lichtenberger
-#
-#Distributed under the terms of the GPL (GNU Public License)
-#
-#dxf2gcode is free software; you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation; either version 2 of the License, or
-#(at your option) any later version.
-#
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
-#
-#You should have received a copy of the GNU General Public License
-#along with this program; if not, write to the Free Software
-#Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# -*- coding: utf-8 -*-
 
+############################################################################
+#   
+#   Copyright (C) 2014-2014
+#    Robert Lichtenberger
+#   
+#   This file is part of DXF2GCODE.
+#   
+#   DXF2GCODE is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#   
+#   DXF2GCODE is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#   
+#   You should have received a copy of the GNU General Public License
+#   along with DXF2GCODE.  If not, see <http://www.gnu.org/licenses/>.
+#   
+############################################################################
 
 from PyQt4 import QtCore, QtGui
 
@@ -29,20 +31,20 @@ class HoleGeo(QtCore.QObject):
     """
     HoleGeo represents drilling holes.
     """ 
-    def __init__(self, P):
+    def __init__(self, Pa):
         """
         Standard Method to initialise the HoleGeo
         """
         QtCore.QObject.__init__(self)
         self.type = "HoleGeo"
-        self.P = P
+        self.Pa = Pa
 
     def __str__(self):
         """ 
         Standard method to print the object
         @return: A string
         """ 
-        return "\nHoleGeo at (%s) " % (self.P)        
+        return "\nHoleGeo at (%s) " % (self.Pa)        
 
     def reverse(self):
         """ 
@@ -73,7 +75,7 @@ class HoleGeo(QtCore.QObject):
         radius = 2
         if layerContent is not None:
             radius = layerContent.getToolRadius()
-        papath.addRoundedRect(abs_geo.P.x - radius, -abs_geo.P.y - radius, 2*radius, 2*radius, radius, radius)
+        papath.addRoundedRect(abs_geo.Pa.x - radius, -abs_geo.Pa.y - radius, 2*radius, 2*radius, radius, radius)
         
     def make_abs_geo(self, parent=None, reverse=0):
         """
@@ -84,8 +86,8 @@ class HoleGeo(QtCore.QObject):
         @return: A new LineGeoClass will be returned.
         """ 
         
-        P = self.P.rot_sca_abs(parent=parent)
-        abs_geo = HoleGeo(P)
+        Pa = self.Pa.rot_sca_abs(parent=parent)
+        abs_geo = HoleGeo(Pa)
         return abs_geo
         
     def get_start_end_points(self, direction, parent=None):
@@ -94,7 +96,7 @@ class HoleGeo(QtCore.QObject):
         @param direction: 0 to return start Point and 1 to return end Point
         @return: a list of Point and angle 
         """
-        return self.P.rot_sca_abs(parent=parent), 0
+        return self.Pa.rot_sca_abs(parent=parent), 0
         
 
     def Write_GCode(self, parent=None, PostPro=None):

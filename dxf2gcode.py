@@ -1,17 +1,28 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-The main
-@newfield purpose: Purpose
-
-@purpose:  program arguments & options handling, read the config file
-@author: Christian Kohlöffel 
-@since:  21.12.2010
-@license: GPL
-"""
-
-
+############################################################################
+#   
+#   Copyright (C) 2010-2014
+#    Christian Kohlöffel
+#    Jean-Paul Schouwstra
+#   
+#   This file is part of DXF2GCODE.
+#   
+#   DXF2GCODE is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#   
+#   DXF2GCODE is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#   
+#   You should have received a copy of the GNU General Public License
+#   along with DXF2GCODE.  If not, see <http://www.gnu.org/licenses/>.
+#   
+############################################################################
 
 # Import Qt modules
 
@@ -22,18 +33,21 @@ from math import degrees, radians
 
 import logging
 logger = logging.getLogger()
+from Core.Logger import LoggerClass
+
+import time
 
 from copy import copy, deepcopy
 
 import subprocess, tempfile #webbrowser, gettext, tempfile
 
-from optparse import OptionParser
+import argparse
 from PyQt4 import QtGui, QtCore
 
 # Import the compiled UI module
 from dxf2gcode_pyQt4_ui.dxf2gcode_pyQt4_ui import Ui_MainWindow
 
-from Core.Logger import LoggerClass
+
 from Core.Config import MyConfig
 from Core.Point import Point
 from Core.LayerContent import LayerContentClass
@@ -53,7 +67,6 @@ from Gui.Dialog import myDialog
 from Gui.AboutDialog import myAboutDialog
 
 from PostPro.TspOptimisation import TSPoptimize
-
 
 # Get folder of the main instance and write into globals
 g.folder = os.path.dirname(os.path.abspath(sys.argv[0])).replace("\\", "/")
@@ -105,13 +118,14 @@ class Main(QtGui.QMainWindow):
             self.ui.actionLive_update_export_route.setChecked(True)
         
         if g.config.vars.General['default_SplitEdges']:
-            self.ui.actionSplit_edges.setChecked(True)
+            self.ui.actionSplit_Edges.setChecked(True)
             
         if g.config.vars.General['default_AutomaticCutterCompensation']:
             self.ui.actionAutomatic_Cutter_Compensation.setChecked(True)
             
+        self.updateMachineType()
             
-        self.readSettings()            
+        self.readSettings()
         
         g.config.metric = 1 # default drawing units: millimeters
         
@@ -149,10 +163,14 @@ class Main(QtGui.QMainWindow):
         self.ui.actionDelete_G0_paths.triggered.connect(self.deleteG0paths)
         
         self.ui.actionTolerances.triggered.connect(self.setTolerances)
-        self.ui.actionSplit_edges.triggered.connect(self.setSplit_edges)
         self.ui.actionRotate_all.triggered.connect(self.CallRotateAll)
         self.ui.actionScale_all.triggered.connect(self.CallScaleAll)
         self.ui.actionMove_WP_zero.triggered.connect(self.CallMoveWpZero)
+        self.ui.actionSplit_Edges.triggered.connect(self.reloadFile)
+        self.ui.actionAutomatic_Cutter_Compensation.triggered.connect(self.reloadFile)
+        self.ui.actionMilling.triggered.connect(self.setMachineTypeToMilling)
+        self.ui.actionDrag_Knife.triggered.connect(self.setMachineTypeToDragKnife)
+        self.ui.actionLathe.triggered.connect(self.setMachineTypeToLathe)
         
         self.ui.actionAbout.triggered.connect(self.about)
 
@@ -367,7 +385,7 @@ class Main(QtGui.QMainWindow):
             #Get the name of the File to export
             if saveas == None:
                 filename = self.showSaveDialog()
-                self.save_filename = filename[0]
+                self.save_filename = str(filename[0].toUtf8()).decode("utf-8")
             else:
                 filename = [None, None]
                 self.save_filename = saveas
@@ -379,7 +397,7 @@ class Main(QtGui.QMainWindow):
                 
                 return
             
-            (beg, ende) = os.path.split(str(self.save_filename))
+            (beg, ende) = os.path.split(self.save_filename)
             (fileBaseName, fileExtension) = os.path.splitext(ende) 
             
             pp_file_nr = 0
@@ -395,6 +413,7 @@ class Main(QtGui.QMainWindow):
             
             self.MyPostProcessor.getPostProVars(pp_file_nr)
         else:
+            self.save_filename = None
             self.MyPostProcessor.getPostProVars(0)
         
         """
@@ -407,6 +426,9 @@ class Main(QtGui.QMainWindow):
                                           self.LayerContents)
         
         QtGui.QApplication.restoreOverrideCursor()
+    
+        if g.config.vars.General['write_to_stdout']:
+            self.close()
     
     def optimizeAndExportShapes(self):
         """
@@ -442,7 +464,7 @@ class Main(QtGui.QMainWindow):
             format_ = "(*%s);;" % (self.MyPostProcessor.output_format[i])
             MyFormats = MyFormats + name + format_
             
-        (beg, ende) = os.path.split(str(self.load_filename))
+        (beg, ende) = os.path.split(self.load_filename)
         (fileBaseName, fileExtension) = os.path.splitext(ende)
         
         default_name = os.path.join(g.config.vars.Paths['output_dir'], fileBaseName)
@@ -487,7 +509,7 @@ class Main(QtGui.QMainWindow):
                 "<a href='http://code.google.com/p/dxf2gcode/issues/list'>issue tracking system</a><br>"\
                 "<h2>License and copyright:</h2>"\
                 "<body>This program is written in Python and is published under the "\
-                "<a href='http://www.gnu.org/licenses/gpl.html'>GNU GPL 3 license.</a><br>"\
+                "<a href='http://www.gnu.org/licenses/'>GNU GPLv3 license.</a><br>"\
                 "</body></html>") % (c.VERSION, c.REVISION, c.DATE, c.AUTHOR)
         
         myAboutDialog(title = "About DXF2GCODE", message = message)
@@ -552,13 +574,6 @@ class Main(QtGui.QMainWindow):
         g.config.point_tolerance = float(SetTolDialog.result[0])
         g.config.fitting_tolerance = float(SetTolDialog.result[1])
         
-        self.reloadFile()
-        #self.MyGraphicsView.update()
-        
-    def setSplit_edges(self):
-        """
-        This function is called by the menu "Split edges" of the main 
-        """
         self.reloadFile()
         #self.MyGraphicsView.update()
         
@@ -633,6 +648,52 @@ class Main(QtGui.QMainWindow):
         self.reloadFile()
         #self.MyGraphicsView.update()
         
+    def setMachineTypeToMilling(self):
+        """
+        This function is called by the menu when Machine Type -> Milling is clicked.
+        """
+        g.config.machine_type = 'milling'
+        self.updateMachineType()
+        self.reloadFile()
+        
+    def setMachineTypeToDragKnife(self):
+        """
+        This function is called by the menu when Machine Type -> Drag Knife is clicked.
+        """
+        g.config.machine_type = 'drag_knife'
+        self.updateMachineType()
+        self.reloadFile()
+        
+    def setMachineTypeToLathe(self):
+        """
+        This function is called by the menu when Machine Type -> Lathe is clicked.
+        """
+        g.config.machine_type = 'lathe'
+        self.updateMachineType()
+        self.reloadFile()
+        
+    def updateMachineType(self):
+        if g.config.machine_type == 'milling':
+            self.ui.actionAutomatic_Cutter_Compensation.setEnabled(True)
+            self.ui.actionMilling.setChecked(True)
+            self.ui.actionDrag_Knife.setChecked(False)
+            self.ui.actionLathe.setChecked(False)
+            self.ui.label_9.setText(self.tr("Z Infeed depth"))
+        elif g.config.machine_type == 'lathe':
+            self.ui.actionAutomatic_Cutter_Compensation.setEnabled(False)
+            self.ui.actionMilling.setChecked(False)
+            self.ui.actionDrag_Knife.setChecked(False)
+            self.ui.actionLathe.setChecked(True)
+            self.ui.label_9.setText(self.tr("No Z-Axis for lathe"))
+        elif g.config.machine_type == "drag_knife":
+            # TODO: Update of Maschine Type Lathe required. Z-Axis not available
+            # But fields may be used for other purpose.
+            self.ui.actionAutomatic_Cutter_Compensation.setEnabled(False)
+            self.ui.actionMilling.setChecked(False)
+            self.ui.actionDrag_Knife.setChecked(True)
+            self.ui.actionLathe.setChecked(False)
+            self.ui.label_9.setText(self.tr("Z Drag depth"))
+            
     
     def loadFile(self, filename):
         """
@@ -643,18 +704,19 @@ class Main(QtGui.QMainWindow):
         
         QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
         
-        self.load_filename = str(filename)
-        (name, ext) = os.path.splitext(str(filename))
+        filename = str(filename).decode("utf-8")
+        self.load_filename = filename
+        (name, ext) = os.path.splitext(filename)
         
         if (ext.lower() == ".ps") or (ext.lower() == ".pdf"):
             logger.info(self.tr("Sending Postscript/PDF to pstoedit"))
             
             #Create temporary file which will be read by the program
-            filename = os.path.join(tempfile.gettempdir(), 'dxf2gcode_temp.dxf').encode("cp1252")
+            filename = os.path.join(tempfile.gettempdir(), 'dxf2gcode_temp.dxf')
            
-            pstoedit_cmd = g.config.vars.Filters['pstoedit_cmd'].encode("cp1252") #"C:\Program Files (x86)\pstoedit\pstoedit.exe"
+            pstoedit_cmd = g.config.vars.Filters['pstoedit_cmd'] #"C:\Program Files (x86)\pstoedit\pstoedit.exe"
             pstoedit_opt = g.config.vars.Filters['pstoedit_opt'] #['-f','dxf','-mm']
-            ps_filename = os.path.normcase(self.load_filename.encode("cp1252"))
+            ps_filename = os.path.normcase(self.load_filename)
             cmd = [(('%s') % pstoedit_cmd)] + pstoedit_opt + [(('%s') % ps_filename), (('%s') % filename)]
             logger.debug(cmd)
             retcode = subprocess.call(cmd)
@@ -814,7 +876,6 @@ class Main(QtGui.QMainWindow):
                 sca = ent_geos[cont.order[0][0]].Scale
                 rot = ent_geos[cont.order[0][0]].rot
                 
-                logger.debug(new_entities)
                 
                 #Erstellen des neuen Entitie Contents f�r das Insert
                 #Creating the new Entitie Contents for the insert
@@ -868,16 +929,13 @@ class Main(QtGui.QMainWindow):
         """
         Documentation required
         """
-        if self.ui.actionSplit_edges.isChecked() == True:
+        if self.ui.actionSplit_Edges.isChecked() == True:
             if geo.type == 'LineGeo':
-                xdiff = (geo.Pe.x - geo.Pa.x) / 2.0
-                ydiff = (geo.Pe.y - geo.Pa.y) / 2.0
+                diff = (geo.Pe - geo.Pa) / 2.0
                 geo_b = deepcopy(geo)
                 geo_a = deepcopy(geo)
-                geo_b.Pe.x -= xdiff
-                geo_b.Pe.y -= ydiff
-                geo_a.Pa.x += xdiff
-                geo_a.Pa.y += ydiff
+                geo_b.Pe -= diff
+                geo_a.Pa += diff
                 self.shapes[-1].geos.append(geo_b)
                 self.shapes[-1].geos.append(geo_a)
             else:
@@ -915,7 +973,7 @@ class Main(QtGui.QMainWindow):
         
 
     def automaticCutterCompensation(self):
-        if self.ui.actionAutomatic_Cutter_Compensation.isChecked() == True:
+        if self.ui.actionAutomatic_Cutter_Compensation.isEnabled() == self.ui.actionAutomatic_Cutter_Compensation.isChecked() == True:
             for layerContent in self.LayerContents:
                 if layerContent.automaticCutterCompensationEnabled():
                     newShapes = [];
@@ -959,52 +1017,56 @@ class Main(QtGui.QMainWindow):
         settings.beginGroup("MainWindow");
         settings.setValue("size", self.size());
         settings.setValue("pos", self.pos());
-        settings.endGroup();         
+        settings.endGroup();   
+
     
 if __name__ == "__main__":
     """
     The main function which is executed after program start.
     """
-    Log = LoggerClass(rootlogger = logger, console_loglevel = logging.DEBUG)
-    
+    Log=LoggerClass(logger)
+
     g.config = MyConfig()
+    Log.set_console_handler_loglevel()
+    Log.add_file_logger()
 
     app = QtGui.QApplication(sys.argv)
+    window = Main(app)
+    g.window = window
+    
+    #shall be sent to. This Class needs a function "def write(self, charstr)
+    Log.add_window_logger(window.myMessageBox)
     
     #Get local language and install if available.
     locale = QtCore.QLocale.system().name()
     translator = QtCore.QTranslator()
-    print("dxf2gcode_" + locale, "./i18n")
     if translator.load("dxf2gcode_" + locale, "./i18n"):
         app.installTranslator(translator)
-        print(dir(translator))
         
-    window = Main(app)
-    g.window = window
     
-    # LogText window exists, setup logging
-    Log.add_window_logger(log_level = logging.INFO)
-    #This is the handle to the GUI where the log message 
-    #shall be sent to. This Class needs a function "def write(self, charstr)
-    Log.set_window_logstream(window.myMessageBox)
+    parser = argparse.ArgumentParser()
     
-    parser = OptionParser("usage: %prog [options]")
-    parser.add_option("-f", "--file", dest = "filename",
-                      help = "read data from FILENAME")
-    parser.add_option("-e", "--export", dest = "export_filename",
+    parser.add_argument("filename",nargs="?")
+
+#    parser.add_argument("-f", "--file", dest = "filename",
+#                      help = "read data from FILENAME")
+    parser.add_argument("-e", "--export", dest = "export_filename",
                       help = "export data to FILENAME")
-    parser.add_option("-q", "--quiet", action = "store_true",
+    parser.add_argument("-q", "--quiet", action = "store_true",
                       dest = "quiet", help = "no GUI")
     
 #    parser.add_option("-v", "--verbose",
 #                      action = "store_true", dest = "verbose")
+    options = parser.parse_args()
 
-    (options, args) = parser.parse_args()
-    logger.debug("Started with following options \n%s" % (options))
+    #(options, args) = parser.parse_args()
+    logger.debug("Started with following options \n%s" % (parser))
     
+
+
     if not options.quiet:
         window.show()
-    
+
     if not(options.filename is None):
         window.filename = options.filename
         #Initialize the scale, rotate and move coordinates

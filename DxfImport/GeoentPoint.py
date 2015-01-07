@@ -1,23 +1,26 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
-#
-#Programmers:   Robert LIchtenberger
-#
-#Distributed under the terms of the GPL (GNU Public License)
-#
-#dxf2gcode is free software; you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation; either version 2 of the License, or
-#(at your option) any later version.
-#
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
-#
-#You should have received a copy of the GNU General Public License
-#along with this program; if not, write to the Free Software
-#Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# -*- coding: utf-8 -*-
+
+############################################################################
+#   
+#   Copyright (C) 2014-2014
+#    Robert Lichtenberger
+#   
+#   This file is part of DXF2GCODE.
+#   
+#   DXF2GCODE is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#   
+#   DXF2GCODE is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#   
+#   You should have received a copy of the GNU General Public License
+#   along with DXF2GCODE.  If not, see <http://www.gnu.org/licenses/>.
+#   
+############################################################################
 
 from PyQt4 import QtGui
 
@@ -88,9 +91,9 @@ class GeoentPoint:
         s = lp.index_code(20, s + 1)
         y0 = float(lp.line_pair[s].value)
 
-        P = Point(x0, y0)
+        Pa = Point(x0, y0)
 
-        self.geo.append(HoleGeo(P=P))
+        self.geo.append(HoleGeo(Pa))
         #self.geo.append(LineGeo(Pa=Point(0,0), Pe=P))
 
         #Neuen Startwert für die nächste Geometrie zurückgeben

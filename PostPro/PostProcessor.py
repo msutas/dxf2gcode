@@ -1,29 +1,29 @@
-#!/usr/bin/python
-# -*- coding: cp1252 -*-
-#
-#dxf2gcode_b02_config.py
-#Programmers:   Christian Kohloeffel
-#               Vinzenz Schulz
-#
-#Distributed under the terms of the GPL (GNU Public License)
-#
-#dxf2gcode is free software; you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation; either version 2 of the License, or
-#(at your option) any later version.
-#
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
-#
-#You should have received a copy of the GNU General Public License
-#along with this program; if not, write to the Free Software
-#Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# -*- coding: utf-8 -*-
 
-#About Dialog
-#First Version of dxf2gcode Hopefully all works as it should
-#Compiled with --onefile --noconsole --upx --tk dxf2gcode_b02.py
+############################################################################
+#   
+#   Copyright (C) 2008-2014
+#    Christian Kohl�ffel
+#    Vinzenz Schulz
+#    Jean-Paul Schouwstra
+#   
+#   This file is part of DXF2GCODE.
+#   
+#   DXF2GCODE is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#   
+#   DXF2GCODE is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#   
+#   You should have received a copy of the GNU General Public License
+#   along with DXF2GCODE.  If not, see <http://www.gnu.org/licenses/>.
+#   
+############################################################################
+
 
 import os
 import time
@@ -62,7 +62,7 @@ class MyPostProcessor(QtCore.QObject):
         """
 
         try:
-            lfiles = os.listdir(os.path.join(g.folder, c.DEFAULT_POSTPRO_DIR))
+            lfiles = sorted(os.listdir(os.path.join(g.folder, c.DEFAULT_POSTPRO_DIR)))
             """
             FIXME Folder needs to be empty or valid config file within.
             """
@@ -206,14 +206,14 @@ class MyPostProcessor(QtCore.QObject):
         if g.config.vars.General['write_to_stdout']:
             print(exstr)
             logger.info(self.tr("Export to STDOUT was successful"))
-            self.close
+            #self.close
     
         else:
             #Export Data to file
             try:
                 #File open and write
                 f = open(save_filename, "w")
-                f.write(exstr)
+                f.write(exstr.encode('utf8'))
                 f.close()
                 logger.info(self.tr("Export to FILE was successful"))    
             except IOError:
@@ -255,7 +255,7 @@ class MyPostProcessor(QtCore.QObject):
         
         self.ze = g.config.vars.Depth_Coordinates['axis3_retract']
         self.lz = self.ze
-        
+             
         self.keyvars = {"%feed":'self.iprint(self.feed)', \
                         "%speed":'self.iprint(self.speed)', \
                         "%tool_nr":'self.iprint(self.tool_nr)', \
@@ -264,20 +264,20 @@ class MyPostProcessor(QtCore.QObject):
                         "%-XE":'self.fnprint(-self.Pe.x)', \
                         "%XA":'self.fnprint(self.Pa.x)', \
                         "%-XA":'self.fnprint(-self.Pa.x)', \
-                        "%YE":'self.fnprint(self.Pe.y)', \
-                        "%-YE":'self.fnprint(-self.Pe.y)', \
-                        "%YA":'self.fnprint(self.Pa.y)', \
-                        "%-YA":'self.fnprint(-self.Pa.y)', \
+                        "%YE":'self.fnprint(self.Pe.y*fac)', \
+                        "%-YE":'self.fnprint(-self.Pe.y*fac)', \
+                        "%YA":'self.fnprint(self.Pa.y*fac)', \
+                        "%-YA":'self.fnprint(-self.Pa.y*fac)', \
                         "%ZE":'self.fnprint(self.ze)', \
                         "%-ZE":'self.fnprint(-self.ze)', \
                         "%I":'self.fnprint(self.IJ.x)', \
                         "%-I":'self.fnprint(-self.IJ.x)', \
-                        "%J":'self.fnprint(self.IJ.y)', \
-                        "%-J":'self.fnprint(-self.IJ.y)', \
+                        "%J":'self.fnprint(self.IJ.y*fac)', \
+                        "%-J":'self.fnprint(-self.IJ.y*fac)', \
                         "%XO":'self.fnprint(self.O.x)', \
                         "%-XO":'self.fnprint(-self.O.x)', \
-                        "%YO":'self.fnprint(self.O.y)', \
-                        "%-YO":'self.fnprint(-self.O.y)', \
+                        "%YO":'self.fnprint(self.O.y*fac)', \
+                        "%-YO":'self.fnprint(-self.O.y*fac)', \
                         "%R":'self.fnprint(self.r)', \
                         "%AngA":'self.fnprint(degrees(self.a_ang))', \
                         "%-AngA":'self.fnprint(degrees(-self.a_ang))', \
@@ -304,8 +304,6 @@ class MyPostProcessor(QtCore.QObject):
             exstr = ''
         else:
             exstr = ''
-        
-        exstr = (exstr.encode("utf-8"))
         
         # In addition the text defined in the PostProcessor Config file is
         # added.
@@ -369,8 +367,10 @@ class MyPostProcessor(QtCore.QObject):
         @param feed: New feedrate
         @return: Returns the string which shall be added.
         """
-        self.feed = feed
-        return self.make_print_str(self.vars.Program["feed_change"]) 
+        if self.feed != feed:
+            self.feed = feed
+            return self.make_print_str(self.vars.Program["feed_change"])
+        return ""
         
     def set_cut_cor(self, cut_cor, Pe):
         """
@@ -531,6 +531,11 @@ class MyPostProcessor(QtCore.QObject):
         by the real Z value in the defined Number Format.
         """
         
+        if g.config.vars.General['machine_type']=='lathe':
+            fac = 2
+        else:
+            fac = 1
+        
         exstr = keystr
         for key_nr in range(len(self.keyvars.keys())):
             exstr = exstr.replace(self.keyvars.keys()[key_nr], \
@@ -570,6 +575,8 @@ class MyPostProcessor(QtCore.QObject):
         @param number: The number which shall be returned in a formatted string
         @return: The formatted string of the number.
         """
+        
+        "You need to change Nr. Format here!!"
         
         pre_dec  = self.vars.Number_Format["pre_decimals"]
         post_dec = self.vars.Number_Format["post_decimals"]
