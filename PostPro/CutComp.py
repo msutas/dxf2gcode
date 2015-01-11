@@ -5,6 +5,11 @@ from Core.LineGeo import LineGeo
 from Core.Shape import ShapeClass
 from Core.BoundingBox import BoundingBox
 
+from PyQt4 import QtCore, QtGui
+
+import logging
+logger = logging.getLogger("PostPro.CutComp") 
+
 from copy import deepcopy 
 from math import sin, cos, atan2, sqrt, pow, pi, degrees
 
@@ -15,7 +20,7 @@ from math import sin, cos, atan2, sqrt, pow, pi, degrees
 
 DEBUG = 1        
         
-class ShapeOffsetClass:
+class ShapeOffsetClass(QtCore.QObject):
     """ 
     Main Class to do the Cutter Compensation for a shape. It produces the 
     Offset curve defined by radius and direction.
@@ -25,12 +30,23 @@ class ShapeOffsetClass:
         Standard method to initialize the class
         """ 
         self.tol = 0.01
-        self.shape=ShapeClass()
-        self.pretshape = ShapeClass()
+        self.shape=CCShape()
+        self.pretshape = CCShape()
         self.radius = 10
         self.dir = 42
-        
-    def do_compensation(self, shape=None, radius=10, direction=41, shape_nr=1):
+    
+    def tr(self, string_to_translate):
+        """
+        Translate a string using the QCoreApplication translation framework
+        @param: string_to_translate: a unicode string    
+        @return: the translated unicode string if it was possible to translate
+        """
+        return unicode(QtGui.QApplication.translate("ShapeClass",
+                                                    string_to_translate,
+                                                    None,
+                                                    QtGui.QApplication.UnicodeUTF8))
+    def do_compensation(self, shape=None, radius=10, direction=41, shape_nr=1,
+                        BaseEntitie=None):
         """ 
         Does the Cutter Compensation for the given Shape
         @param shape: The shape which shall be used for cutter correction
@@ -46,12 +62,12 @@ class ShapeOffsetClass:
         
         #Pretreatment of the shapes to have no LSIP
         self.pretshape = self.pretreatment(joinedshape)      
-        rawoffshape = self.make_raw_offsett(self.pretshape)
-        untroffshape = self.make_untrimmed_offset(rawoffshape)
+        rawoffshape = self.make_raw_offsett(self.pretshape,parent=BaseEntitie)
+        untroffshape = self.make_untrimmed_offset(rawoffshape,parent=BaseEntitie)
         clippedshapes = self.do_clipping(untroffshape)
         
-        return clippedshapes
-        #return [untroffshape]
+        #return clippedshapes
+        return [untroffshape]
         
     def joinshapepoints(self,shape):
         """ 
@@ -62,7 +78,7 @@ class ShapeOffsetClass:
         elements at their intersection Point.
         """ 
 
-        joinedshape = ShapeClass(parent=shape.parent,
+        joinedshape = CCShape(parent=shape.parent,
                            cut_cor=40,
                            nr=shape.nr,
                            closed=shape.closed,
@@ -70,6 +86,7 @@ class ShapeOffsetClass:
         
         joinedshape.BB = shape.BB
         
+        logger.debug(self.tr('Joining the shape starting- and end- Points'))
         for geo in shape.geos:
             #Generate new Geometry copied from pevious one
             if geo==shape.geos[0]:
@@ -100,7 +117,8 @@ class ShapeOffsetClass:
         elements at their intersection Point.
         """ 
 
-        pretshape = ShapeClass(parent=joinedshape.parent,
+        logger.debug(self.tr('Doing the pretreatment of the shapes.'))
+        pretshape = CCShape(parent=joinedshape.parent,
                            cut_cor=40,
                            nr=joinedshape.nr,
                            closed=joinedshape.closed,
@@ -131,6 +149,7 @@ class ShapeOffsetClass:
                 intersect = geo1.BB.hasintersection(geo2.BB, self.tol)
                     
                 if intersect:
+                    #logger.debug("Geo1: %sGeo2: %s" %(geo1,geo2))
                     points = geo1.find_inter_points(geo2, tol=self.tol)
                     #Check if the Point is in tolerance with the last Point of geo1
                     #If not it is a Local Self Intersecting Point per Definition 2 
@@ -146,6 +165,7 @@ class ShapeOffsetClass:
                             
                             if not(geo_nr==len(self.shape.geos)):
                                 pretshape.geos.pop()
+                            logger.debug(self.tr('Found local self intersecting point at: %s in geo: %s' %(Point,geo)))
                             pretshape.geos.pop()
                             pretshape.geos += geo1.split_into_2geos(Point)
                             if not(geo_nr==len(self.shape.geos)):
@@ -153,7 +173,7 @@ class ShapeOffsetClass:
                                             
         return pretshape 
         
-    def make_raw_offsett(self, pretshape):
+    def make_raw_offsett(self, pretshape=None,parent=None):
         """ 
         Generates the raw offset curves of the pretreated shape, which has no
         local self intersections. 
@@ -162,7 +182,8 @@ class ShapeOffsetClass:
         @return: Returns the raw offset shape which is not trimmed or joined.
         """ 
         
-        rawoffshape = ShapeClass(parent=self.shape.parent,
+        logger.debug(self.tr('Producing raw offset shape'))
+        rawoffshape = CCShape(parent=parent,
                            cut_cor=40,
                            nr=self.shape.nr,
                            closed=self.shape.closed,
@@ -175,7 +196,7 @@ class ShapeOffsetClass:
                                             direction=self.dir)  
         return rawoffshape
    
-    def make_untrimmed_offset(self, rawoffshape):
+    def make_untrimmed_offset(self, rawoffshape,parent=None):
         """ 
         The untrimmed offset shape is generated according to para 3.2. It 
         searches the intersection points and dependent on the type of 
@@ -185,7 +206,7 @@ class ShapeOffsetClass:
         @return: Returns the joined untrimmed offset shape.
         """  
     
-        untroffshape = ShapeClass(parent=self.shape.parent,
+        untroffshape = CCShape(parent=parent,
                            cut_cor=40,
                            nr=self.shape.nr,
                            closed=self.shape.closed,
@@ -219,7 +240,8 @@ class ShapeOffsetClass:
             untroffshape.geos.append(rawoffshape.geos[0])
             return untroffshape
         if len(untroffshape.geos)==0:
-            return untroffshape
+            logger.warning(self.tr('The untrimmed offset shape includes no geometry '))
+            return #untroffshape
         else:
             if not(untroffshape.closed):
                 if geo2.type=='CCLineGeo':
@@ -238,6 +260,9 @@ class ShapeOffsetClass:
                 #Call the trim join algorithms for the elements.
                 untroffshape.geos += geo1.trim_join(geo2, newPa, 
                                                     orgPe, self.tol)
+                
+                #If the 2nd geometry is a line make the staring point the ending
+                #point of the previous geometry.
                 if geo2.type=='CCLineGeo':
                     untroffshape.geos[0].Pa=untroffshape.geos[-1].Pe
                     untroffshape.geos[0].calc_bounding_box()
@@ -249,6 +274,7 @@ class ShapeOffsetClass:
                     modgeo.ext=modgeo.dif_ang(modgeo.Pa, modgeo.Pe, modgeo.ext)
                     untroffshape.geos[0].calc_bounding_box()
         
+        logger.debug('Created untrimmed offset shape: %s' %untroffshape)
         return untroffshape
     
     def do_clipping(self, untroffshape):
@@ -477,8 +503,9 @@ class ShapeOffsetClass:
              
         return clippedshapes
                     
+       
     def return_new_clippedshape(self):
-        clippedshape = ShapeClass(parent=self.shape.parent,
+        clippedshape = CCShape(parent=self.shape.parent,
                            cut_cor=40,
                            nr=self.shape_nr,
                            closed=self.shape.closed,
@@ -507,8 +534,273 @@ class ShapeOffsetClass:
             return 1
         else:
             return 0
-        #return geo1.BB.Pe.x<=geo2.BB.Pe.x    
-          
+        #return geo1.BB.Pe.x<=geo2.BB.Pe.x   
+         
+class CCShape(ShapeClass):
+    def __init__(self, nr='None', closed=0,
+                cut_cor=40, length=0.0,
+                parent=None,
+                geos=[],
+                axis3_start_mill_depth=None, axis3_mill_depth=None,
+                axis3_slice_depth=None, f_g1_plane=None, f_g1_depth=None):
+        """ 
+        Standard method to initialize the class
+        @param nr: The number of the shape. Starting from 0 for the first one 
+        @param closed: Gives information about the shape, when it is closed this
+        value becomes 1
+        @param cut_cor: Gives the selected Curring Correction of the shape
+        (40=None, 41=Left, 42= Right)
+        @param length: The total length of the shape including all geometries
+        @param parent: The parent EntitieContent Class of the shape
+        @param geow: The list with all geometries included in the shape
+        @param axis3_mill_depth: Optional parameter for the export of the shape.
+        If this parameter is None the mill_depth of the parent layer will be used.
+        """
+        ShapeClass.__init__(self,nr=nr, closed=closed,cut_cor=cut_cor,
+                       length=length,parent=parent,geos=geos,
+                       axis3_start_mill_depth=axis3_start_mill_depth,
+                       axis3_mill_depth=axis3_mill_depth,
+                       axis3_slice_depth=axis3_slice_depth,
+                       f_g1_plane=f_g1_plane, f_g1_depth=f_g1_depth)
+        
+        #logger.debug(_('Setting Pen for offsetShape Nr. %s' %offsetShape.nr))
+
+        self.pen=QtGui.QPen(QtCore.Qt.darkGray,2)
+        self.pen.setCosmetic(True)
+        self.sel_pen=QtGui.QPen(QtCore.Qt.magenta,2) #,QtCore.Qt.DashLine
+        self.sel_pen.setCosmetic(True)
+        self.dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+        self.dis_pen.setCosmetic(True)
+        self.sel_dis_pen=QtGui.QPen(QtCore.Qt.lightGray) #2,QtCore.Qt.DotLine
+        self.sel_dis_pen.setCosmetic(True)
+        
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
+        self.disabled=False
+                       
+
+    def setPen(self, pen):
+        """ 
+        Method to change the Pen of the outline of the object and update the
+        drawing
+        """ 
+        self.pen = pen
+        self.update(self.boundingRect())
+
+    def paint(self, painter, option, _widget):
+        """ 
+        Method will be triggered with each paint event. Possible to give
+        options
+        @param painter: Reference to std. painter
+        @param option: Possible options here
+        @param _widget: The widget which is painted on.
+        """ 
+
+
+        cc_pen=QtGui.QPen(QtCore.Qt.blue,1,QtCore.Qt.DashLine) #,QtCore.Qt.DashLine
+        cc_pen.setCosmetic(True)
+        painter.setPen(cc_pen)
+
+        painter.drawPath(self.path) 
+        
+        #line = QtGui.QGraphicsLineItem()
+        (startp,sang)=self.get_st_en_points(1)
+        (endp,sang)=self.get_st_en_points(0)
+        #logger.debug(startp)
+        st_point=QtCore.QPointF(startp.x, -startp.y)
+        en_point=QtCore.QPointF(endp.x, -endp.y)
+        #painter.drawLine(st_point,en_point)
+        
+        cc_pen=QtGui.QPen(QtCore.Qt.red,1,QtCore.Qt.DashLine) #,QtCore.Qt.DashLine
+        cc_pen.setCosmetic(True)
+        painter.setPen(cc_pen)
+        painter.drawEllipse (st_point,0.5,0.5)
+        
+        cc_pen=QtGui.QPen(QtCore.Qt.magenta,1,QtCore.Qt.DashLine) #,QtCore.Qt.DashLine
+        cc_pen.setCosmetic(True)
+        painter.setPen(cc_pen)
+        painter.drawEllipse (en_point,0.75,0.75)
+        
+        
+    def boundingRect(self):
+        """ 
+        Required method for painting. Inherited by Painterpath
+        @return: Gives the Bounding Box
+        """ 
+        
+        margin=2
+        return self.path.boundingRect().adjusted(-margin,-margin,margin,margin)
+        #return self.childrenBoundingRect()
+        
+
+#    def shape(self):
+#        """ 
+#        Reimplemented function to select outline only.
+#        @return: Returns the Outline only
+#        """ 
+##        tolerance = 5
+##        
+##        start, start_ang = self.get_st_en_points()
+##        hitpath = QtGui.QPainterPath()
+##        
+##        # begin with a circle around the start point 
+##        hitpath.addEllipse(start.x,start.y, tolerance, tolerance);  
+### 
+###    //input now starts with the 2nd point (there was a takeFirst) 
+##        for geo in self.geos:
+##            geo.add2hitpath(hitpath=hitpath,
+##                            parent=self.parent,
+##                            tolerance=tolerance)
+#        
+#        painterStrock = QtGui.QPainterPathStroker()
+#        painterStrock.setCurveThreshold(0.01)
+#        painterStrock.setWidth(0)
+#
+#        stroke = painterStrock.createStroke(self.path)
+#        return stroke
+    
+    
+    def make_papath(self):
+        """
+        To be called if a Shape shall be printed to the canvas
+        """
+        start, start_ang = self.get_st_en_points()
+        
+        logger.debug('self.path wurde angelegt')
+        self.path = QtGui.QPainterPath()
+
+        self.path.moveTo(start.x,-start.y)
+        
+        logger.debug(self.tr("Adding shape to Scene Nr: %i") % (self.nr))
+        
+
+        for geo in self.geos:
+            geo.add2path(papath=self.path, parent=self.parent)
+            
+    
+
+#    QPainterPath intersectionTestPath(QList<QPointF> input, qreal tolerance) 
+#{ 
+#    //will be the result 
+#    QPainterPath path; 
+# 
+#    //during the loop, p1 is the "previous" point, initially the first one 
+#    QPointF p1 = input.takeFirst();  
+# 
+#    //begin with a circle around the start point 
+#    path.addEllipse(p1, tolerance, tolerance);  
+# 
+#    //input now starts with the 2nd point (there was a takeFirst) 
+#    foreach(QPointF p2, input)  
+#    { 
+#        //note: during the algorithm, the pair of points (p1, p2) 
+#        //      describes the line segments defined by input. 
+# 
+#        //offset = the distance vector from p1 to p2 
+#        QPointF offset = p2 - p1; 
+# 
+#        //normalize offset to length of tolerance 
+#        qreal length = sqrt(offset.x() * offset.x() + offset.y() * offset.y()); 
+#        offset *= tolerance / length; 
+# 
+#        //"rotate" the offset vector 90 degrees to the left and right 
+#        QPointF leftOffset(-offset.y(), offset.x()); 
+#        QPointF rightOffset(offset.y(), -offset.x()); 
+# 
+#        //if (p1, p2) goes downwards, then left lies to the left and 
+#        //right to the right of the source path segment 
+#        QPointF left1 = p1 + leftOffset;
+#        QPointF left2 = p2 + leftOffset;
+#        QPointF right1 = p1 + rightOffset;
+#        QPointF right2 = p2 + rightOffset;
+# 
+#        //rectangular connection from p1 to p2
+#        { 
+#            QPainterPath p;
+#            p.moveTo(left1);
+#            p.lineTo(left2);
+#            p.lineTo(right2);
+#            p.lineTo(right1);
+#            p.lineTo(left1);
+#            path += p; //add this to the result path
+#        }
+# 
+#        //circle around p2
+#        {
+#            QPainterPath p;
+#            p.addEllipse(p2, tolerance, tolerance);
+#            path += p; //add this to the result path
+#        }
+# 
+#        p1 = p2; 
+#    } 
+# 
+#    //This does some simplification; you should use this if you call 
+#    //path.contains() multiple times on a pre-calculated path, but 
+#    //you won't need this if you construct a new path for every call 
+#    //to path.contains(). 
+#    return path.simplified(); 
+#} 
+
+    
+    
+    
+    
+
+    def mousePressEvent(self, event):
+        """
+        Right Mouse click shall have no function, Therefore pass only left 
+        click event
+        @purpose: Change inherited mousePressEvent
+        @param event: Event Parameters passed to function
+        """
+        pass
+        #scene = self.scene()
+     
+#        if event.button() == QtCore.Qt.LeftButton:
+#            super(CCShape, self).mousePressEvent(event)
+
+    def setSelected(self, flag=True, blockSignals=False):
+        """
+        Override inherited function to turn off selection of Arrows.
+        @param flag: The flag to enable or disable Selection
+        """
+        pass
+             
+                     
+    def reverse(self):
+        """ 
+        Reverses the direction of the whole shape (switch direction).
+        """ 
+        pass
+            
+
+
+    def reverseGUI(self):
+        """
+        This function is called from the GUI if the GUI needs to be updated after
+        the reverse of the shape to.
+        """
+        pass
+        
+    def switch_cut_cor(self):
+        """ 
+        Switches the cutter direction between 41 and 42.
+
+        G41 = Tool radius compensation left.
+        G42 = Tool radius compensation right
+        """ 
+        pass
+
+
+    def update_plot(self):
+        """
+        This function is called from the GUI if the GUI needs to be updated after
+        the reverse of the shape to.
+        """
+        pass
+        
+
+        
 class CCArcGeo(ArcGeo):
     def __init__(self, Pa=None, Pe=None, O=None, r=1,
                          s_ang=None, e_ang=None, direction=1, Nr=None):
@@ -539,6 +831,30 @@ class CCArcGeo(ArcGeo):
                ("\nBB : %s" % self.BB) + \
                ("\ninters : %s" % self.inters) + \
                ("\next  : %0.5f; length: %0.5f" % (self.ext, self.length))
+               
+    def add2path(self, papath = None, parent = None, layerContent=None):
+
+        """
+        Plots the geometry of self into defined path for hit testing. Refer
+        to http://stackoverflow.com/questions/11734618/check-if-point-exists-in-qpainterpath
+        for description
+        @param hitpath: The hitpath to add the geometrie
+        @param parent: The parent of the shape
+        """
+        
+        abs_geo=self.make_abs_geo(parent, 0)
+
+        segments = int((abs(degrees(abs_geo.ext)) // 3) + 1)
+        
+        for i in range(segments + 1):
+            
+            ang = abs_geo.s_ang + i * abs_geo.ext / segments
+            p_cur = Point(x=(abs_geo.O.x + cos(ang) * abs(abs_geo.r)), \
+                       y=(abs_geo.O.y + sin(ang) * abs(abs_geo.r)))
+
+            if i >= 1:
+                papath.lineTo(p_cur.x, -p_cur.y)    
+
 
     def calc_bounding_box(self):
         """
@@ -1010,7 +1326,19 @@ class CCLineGeo(LineGeo):
                ("\nPe : %s" % self.Pe) + \
                ("\nBB : %s" % self.BB) + \
                ("\ninters : %s" % self.inters) + \
-               ("\nlength: %0.5f" % self.length)   
+               ("\nlength: %0.5f" % self.length)  
+               
+    def add2path(self, papath=None, parent=None, layerContent=None):
+        """
+        Plots the geometry of self into defined path for hit testing..
+        @param hitpath: The hitpath to add the geometrie
+        @param parent: The parent of the shape
+        @param tolerance: The tolerance to be added to geometrie for hit
+        testing.
+        """
+
+        abs_geo = self.make_abs_geo(parent, 0)
+        papath.lineTo(abs_geo.Pe.x, -abs_geo.Pe.y) 
     def calc_bounding_box(self):
         """
         Calculated the BoundingBox of the geometry and saves it into self.BB
@@ -1085,9 +1413,10 @@ class CCLineGeo(LineGeo):
     
     def find_inter_point_l_a(self, Arc):
         """
-        Find the intersection between 2 CCLineGeo elements. There can be only one
-        intersection between 2 lines.
-        @param other: the instance of the 2nd geometry element.
+        Find the intersection between 2 CCLineGeo elements. The intersection 
+        between a Line and a Arc is checked here. This function is also used 
+        in the Arc Class to check Arc -> Line Intersection (the other way around)
+        @param Arc: the instance of the 2nd geometry element.
         @return: a list of intersection points. 
         """
         Ldx = self.Pe.x - self.Pa.x
@@ -1375,7 +1704,7 @@ class CCLineGeo(LineGeo):
                 geos.append(CCLineGeo(self.Pe, other.Pa))
                 if geos[-1].length<tol:
                     geos.pop()
-                    print ('Case1c 2')
+                    #print ('Case1c 2')
                     #print self
                     #print other
                     #print ipoint
@@ -1420,7 +1749,7 @@ class IPoint(Point):
         """
         Checks if the Point is on the CCLineGeo, therefore a true intersection
         Point.
-        @param other: The Point which shall be ckecke
+        @param other: The Point which shall be checke
         @return: Returns true or false
         """
         if geo==self.geo1:

@@ -56,7 +56,7 @@ class LoggerClass(QtCore.QObject):
         self.console_handler = logging.StreamHandler(sys.stderr)
         self.console_handler.setLevel(logging.ERROR)
         
-        formatter=logging.Formatter("%(levelname)-10s %(name)-15s %(funcName)-10s %(lineno)-4d:  - %(message)s")
+        formatter=logging.Formatter("%(levelname)-10s %(name)-17s %(funcName)-17s %(lineno)-4d:  - %(message)s")
         self.console_handler.setFormatter(formatter)
         root_logger.addHandler(self.console_handler)
         

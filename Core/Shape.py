@@ -206,6 +206,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         else:
             painter.setPen(self.dis_pen)
             
+        #logger.debug("Painting shape: %s" %self)
         painter.drawPath(self.path) 
         
     def boundingRect(self):
@@ -215,48 +216,48 @@ class ShapeClass(QtGui.QGraphicsItem):
         """ 
         return self.path.boundingRect()
 
-    def shape(self):
-        """ 
-        Reimplemented function to select outline only.
-        @return: Returns the Outline only
-        """ 
-#        tolerance = 5
+#    def shape(self):
+#        """ 
+#        Reimplemented function to select outline only.
+#        @return: Returns the Outline only
+#        """ 
+##        tolerance = 5
+##        
+##        start, start_ang = self.get_st_en_points()
+##        hitpath = QtGui.QPainterPath()
+##        
+##        # begin with a circle around the start point 
+##        hitpath.addEllipse(start.x,start.y, tolerance, tolerance);  
+### 
+###    //input now starts with the 2nd point (there was a takeFirst) 
+##        for geo in self.geos:
+##            geo.add2hitpath(hitpath=hitpath,
+##                            parent=self.parent,
+##                            tolerance=tolerance)
 #        
-#        start, start_ang = self.get_st_en_points()
-#        hitpath = QtGui.QPainterPath()
-#        
-#        # begin with a circle around the start point 
-#        hitpath.addEllipse(start.x,start.y, tolerance, tolerance);  
-## 
-##    //input now starts with the 2nd point (there was a takeFirst) 
-#        for geo in self.geos:
-#            geo.add2hitpath(hitpath=hitpath,
-#                            parent=self.parent,
-#                            tolerance=tolerance)
-        
-        painterStrock = QtGui.QPainterPathStroker()
-        painterStrock.setCurveThreshold(0.01)
-        painterStrock.setWidth(0)
-
-        stroke = painterStrock.createStroke(self.path)
-        return stroke
-    
-    
-#    def make_papath(self):
-#        """
-#        To be called if a Shape shall be printed to the canvas
-#        """
-#        start, start_ang = self.get_st_en_points()
-#        
-#        self.path = QtGui.QPainterPath()
+#        painterStrock = QtGui.QPainterPathStroker()
+#        painterStrock.setCurveThreshold(0.01)
+#        painterStrock.setWidth(0)
 #
-#        self.path.moveTo(start.x,-start.y)
-#        
-#        logger.debug(self.tr("Adding shape to Scene Nr: %i") % (self.nr))
-#        
-#        for geo in self.geos:
-#            geo.add2path(papath=self.path, parent=self.parent)
-#            
+#        stroke = painterStrock.createStroke(self.path)
+#        return stroke
+    
+    
+    def make_papath(self):
+        """
+        To be called if a Shape shall be printed to the canvas
+        """
+        start, start_ang = self.get_st_en_points()
+        
+        self.path = QtGui.QPainterPath()
+
+        self.path.moveTo(start.x,-start.y)
+        
+        logger.debug(self.tr("Adding shape to Scene Nr: %i") % (self.nr))
+        
+        for geo in self.geos:
+            geo.add2path(papath=self.path, parent=self.parent)
+            
 #    
 #    QPainterPath intersectionTestPath(QList<QPointF> input, qreal tolerance) 
 #{ 
@@ -320,9 +321,9 @@ class ShapeClass(QtGui.QGraphicsItem):
 #    //to path.contains(). 
 #    return path.simplified(); 
 #} 
-#
-#    
-#    
+
+    
+    
     
     
 
