@@ -3,7 +3,7 @@
 ############################################################################
 #   
 #   Copyright (C) 2008-2014
-#    Christian Kohlöffel
+#    Christian Kohlï¿½ffel
 #    Vinzenz Schulz
 #    Jean-Paul Schouwstra
 #   
@@ -133,7 +133,10 @@ class StMove(QtGui.QGraphicsLineItem):
       
         if self.shape.cut_cor == 40:              
             self.geos.append(start)
-
+    
+            """
+            Start Move is create here. Change this to something els to try it ....
+            """
         #Cutting Compensation Left        
         elif self.shape.cut_cor == 41:
             #Center of the Starting Radius.

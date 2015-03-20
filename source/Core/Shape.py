@@ -574,6 +574,9 @@ class ShapeClass(QtGui.QGraphicsItem):
         exstr = "" 
         
         #Create the Start_moves once again if something was changed.
+        """
+        This function is called to make the geometry of the start move
+        """
         self.stmove.make_start_moves()
         
         #Calculate tool Radius.        
@@ -609,7 +612,10 @@ class ShapeClass(QtGui.QGraphicsItem):
         mom_depth = initial_mill_depth
 
 
-        #Move the tool to the start.          
+        #Move the tool to the start.  
+        """
+        First call to write the first geometry
+        """        
         exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent, 
                                                  PostPro=PostPro)
         
@@ -624,6 +630,10 @@ class ShapeClass(QtGui.QGraphicsItem):
             exstr += PostPro.set_cut_cor(self.cut_cor, start)
             
             exstr += PostPro.chg_feed_rate(f_g1_plane) #Added by Xavier because of code move (see above)
+            
+            """
+            The line and the arc are added to GCode here. This may be required to adapt if more or less geometries are used for start move.
+            """
             exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent, 
                                                      PostPro=PostPro)
             exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent, 
@@ -697,9 +707,14 @@ class ShapeClass(QtGui.QGraphicsItem):
             elif self.cut_cor == 42:
                 pos_cut_out = ende.get_arc_point(en_angle + pi/2, tool_rad)
 
+
             #Turning off the cutter radius compensation if needed
             if (not(self.cut_cor == 40)) & (PostPro.vars.General["cancel_cc_for_depth"] == 1):
                 exstr += PostPro.deactivate_cut_cor(pos_cut_out)
+                
+        """
+        Here you may add something if you need a dedicated end move ...
+        """
         
         #Do the tool retraction
         exstr += PostPro.chg_feed_rate(f_g1_depth)
