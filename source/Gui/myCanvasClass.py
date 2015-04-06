@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from Gui.PerpendicularMove import PerpendicularMove
 
 ############################################################################
 #   
@@ -37,7 +38,7 @@ from Core.Point import Point
 
 from Gui.WpZero import WpZero
 from Gui.Arrow import Arrow
-from Gui.StMove import StMove
+from Gui.RadiusMove import RadiusMove
 from Gui.RouteText import RouteText
 #import math
 import Core.Globals as g
@@ -555,6 +556,7 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
         shape.starrow = self.createstarrow(shape)
         shape.enarrow = self.createenarrow(shape)
         shape.stmove = self.createstmove(shape)
+        shape.exmove = self.createexmove(shape)
         shape.starrow.setParentItem(shape)
         shape.enarrow.setParentItem(shape)
         shape.stmove.setParentItem(shape)
@@ -602,12 +604,27 @@ class MyGraphicsScene(QtGui.QGraphicsScene):
         @param shape: The shape for which the Move shall be created.
         """
         start, start_ang = shape.get_st_en_points(0)
-        stmove = StMove(start,
-                      start_ang,
-                      QtGui.QColor(50, 100, 255),
-                      shape,self.EntitiesRoot)
+        if g.config.vars.General['lead_in_move'] == "line":
+            stmove = PerpendicularMove(start, start_ang, QtGui.QColor(50, 100, 255), shape,self.EntitiesRoot, True)
+        else:
+            stmove = RadiusMove(start, start_ang, QtGui.QColor(50, 100, 255), shape,self.EntitiesRoot)
         stmove.hide()
         return stmove
+    
+    def createexmove(self, shape):
+        """
+        This function creates the Additional Start and End Moves in the plot
+        window when the shape is selected
+        @param shape: The shape for which the Move shall be created.
+        """
+        start, start_ang = shape.get_st_en_points(0)
+        if g.config.vars.General['lead_out_move'] == "line":
+            exmove = PerpendicularMove(start, start_ang, QtGui.QColor(50, 100, 255), shape,self.EntitiesRoot, False)
+        else:
+            exmove = RadiusMove(start, start_ang, QtGui.QColor(50, 100, 255), shape,self.EntitiesRoot)
+        exmove.hide()
+        return exmove
+    
     
     def resetexproutes(self):
         """

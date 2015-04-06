@@ -90,6 +90,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         self.length = length
         self.parent = parent
         self.stmove = []
+        self.exmove = []
         self.LayerContent = None
         self.geos = geos
         self.axis3_mill_depth = axis3_mill_depth
@@ -615,13 +616,6 @@ class ShapeClass(QtGui.QGraphicsItem):
         mom_depth = initial_mill_depth
 
 
-        # Move the tool to the start.  
-        """
-        First call to write the first geometry
-        """        
-        exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent,
-                                                 PostPro=PostPro)
-        
         # Add string to be added before the shape will be cut.
         exstr += PostPro.write_pre_shape_cut()
 
@@ -632,15 +626,13 @@ class ShapeClass(QtGui.QGraphicsItem):
             start, start_ang = self.get_st_en_points(0)
             exstr += PostPro.set_cut_cor(self.cut_cor, start)
             
-            exstr += PostPro.chg_feed_rate(f_g1_plane)  # Added by Xavier because of code move (see above)
+            exstr += PostPro.chg_feed_rate(f_g1_plane)  # Added by Xavier because of code move (see above)            
+            exstr += self.stmove.Write_GCode(PostPro=PostPro)
+        elif not PostPro.vars.General["cc_outside_the_piece"]:
+            exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent,
+                                                 PostPro=PostPro)
+        
             
-            """
-            The line and the arc are added to GCode here. This may be required to adapt if more or less geometries are used for start move.
-            """
-            exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent,
-                                                     PostPro=PostPro)
-            exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent,
-                                                     PostPro=PostPro)
 
         exstr += PostPro.rap_pos_z(workpiece_top_Z + abs(safe_margin))  # Compute the safe margin from the initial mill depth
         exstr += PostPro.chg_feed_rate(f_g1_depth)
@@ -653,11 +645,7 @@ class ShapeClass(QtGui.QGraphicsItem):
             # and add the compensation
             start, start_ang = self.get_st_en_points(0)
             exstr += PostPro.set_cut_cor(self.cut_cor, start)
-            
-            exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent,
-                                                     PostPro=PostPro)
-            exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent,
-                                                     PostPro=PostPro)
+            exstr += self.stmove.Write_GCode(PostPro=PostPro)
 
         # Write the geometries for the first cut
         for geo in self.geos:
@@ -729,8 +717,10 @@ class ShapeClass(QtGui.QGraphicsItem):
             # Calculate the contour values - with cutter radius compensation and without
             ende, en_angle = self.get_st_en_points(1)
             
-            # closed shape & G42 => create exit move: redo first geo (https://sourceforge.net/p/dxf2gcode/tickets/61/)
-            if (self.cut_cor == 42) & (self.closed == 1) & (g.config.vars.General['lead_out_move'] == "add_first"):   
+            if g.config.vars.General['lead_out_move'] == "line":
+                exstr += self.exmove.Write_GCode(PostPro=PostPro)                
+            # closed shape => create exit move: redo first geo (https://sourceforge.net/p/dxf2gcode/tickets/61/)
+            elif (self.closed == 1) & (g.config.vars.General['lead_out_move'] == "add_first"):   
                 exstr += self.geos[0].Write_GCode(self.parent, PostPro)
 
             

@@ -88,8 +88,8 @@ CONFIG_SPEC = str('''
     default_SplitEdges = boolean(default = False)
     default_AutomaticCutterCompensation = boolean(default = False)
     machine_type = option('milling', 'drag_knife', 'lathe', default = 'milling')
-    lead_in_move = option('none','radius','radius2',default = 'radius')
-    lead_out_move = option('none','add_first',default = 'none')
+    lead_in_move = option('none','radius','radius2','line', default = 'radius')
+    lead_out_move = option('none','add_first','line', default = 'none')
     
     [Drag_Knife_Options]
     dragAngle = float(default = 20)

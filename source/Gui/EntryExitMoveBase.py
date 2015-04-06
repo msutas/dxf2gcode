@@ -25,21 +25,17 @@
 #   
 ############################################################################
 
-from math import pi
-
 import Core.Globals as g
-from Core.LineGeo import LineGeo
 from Core.ArcGeo import ArcGeo
 from Core.Point import Point
-from Core.EntitieContent import EntitieContentClass
 
 from Gui.Arrow import Arrow
 
 from math import sin, cos, pi, sqrt
-from copy import copy, deepcopy
+from copy import deepcopy
 
 import logging
-logger = logging.getLogger('Gui.StMove')
+logger = logging.getLogger('Gui.RadiusMove')
 
 from PyQt4 import QtCore, QtGui
 
@@ -47,7 +43,7 @@ from PyQt4 import QtCore, QtGui
 dl = 0.2
 DEBUG = 1
 
-class StMove(QtGui.QGraphicsLineItem):
+class EntryExitMoveBase(QtGui.QGraphicsLineItem):
     """
     This Function generates the StartMove for each shape. It
     also performs the Plotting and Export of this moves. It is linked
@@ -67,7 +63,7 @@ class StMove(QtGui.QGraphicsLineItem):
         geometries are added.
         """
         self.sc = 1
-        super(StMove, self).__init__()
+        super(EntryExitMoveBase, self).__init__()
 
         self.startp = startp
         self.endp = startp
@@ -108,89 +104,7 @@ class StMove(QtGui.QGraphicsLineItem):
             self.make_swivelknife_move()
             return
         
-        # BaseEntitie created to add the StartMoves etc. This Entitie must not
-        # be offset or rotated etc.
-        BaseEntitie = EntitieContentClass(Nr=-1, Name='BaseEntitie',
-                                          parent=None,
-                                          children=[],
-                                          p0=Point(x=0.0, y=0.0),
-                                          pb=Point(x=0.0, y=0.0),
-                                          sca=[1, 1, 1],
-                                          rot=0.0)
-        
-        self.parent = BaseEntitie
-        
-
-        # Get the start rad. and the length of the line segment at begin. 
-        start_rad = self.shape.LayerContent.start_radius
-        start_ver = start_rad
-
-        # Get tool radius based on tool diameter.   
-        tool_rad = self.shape.LayerContent.tool_diameter / 2
-        
-        # Calculate the starting point with and without compensation.        
-        start = self.startp
-        angle = self.angle
-      
-        if self.shape.cut_cor == 40:              
-            self.geos.append(start)
-    
-            """
-            Start Move is create here. Change this to something els to try it ....
-            Once again, here may be the point to do the work
-            """
-        # Cutting Compensation Left    
-        elif self.shape.cut_cor == 41 and (g.config.vars.General['lead_in_move'] == "radius"):     
-        # elif self.shape.cut_cor == 41:
-            # Center of the Starting Radius.
-            Oein = start.get_arc_point(angle + pi / 2, start_rad + tool_rad)
-            # Start Point of the Radius
-            Pa_ein = Oein.get_arc_point(angle + pi, start_rad + tool_rad)
-            # Start Point of the straight line segment at begin.
-            Pg_ein = Pa_ein.get_arc_point(angle + pi / 2, start_ver)
-            
-            # Get the dive point for the starting contour and append it.
-            start_ein = Pg_ein.get_arc_point(angle, tool_rad)
-            self.geos.append(start_ein)
-
-            # generate the Start Line and append it including the compensation. 
-            start_line = LineGeo(Pg_ein, Pa_ein)
-            self.geos.append(start_line)
-
-            # generate the start rad. and append it.
-            start_rad = ArcGeo(Pa=Pa_ein, Pe=start, O=Oein,
-                               r=start_rad + tool_rad, direction=1)
-            self.geos.append(start_rad)
-            
-        # Cutting Compensation Right            
-        elif (self.shape.cut_cor == 42  and
-              ((g.config.vars.General['lead_in_move'] == "radius") or
-               (g.config.vars.General['lead_in_move'] == "radius2"))):
-            
-            # closed shape & G42 => create exit move: redo first geo (https://sourceforge.net/p/dxf2gcode/tickets/61/)
-            if (g.config.vars.General['lead_in_move'] == "radius2"):
-                angle = angle + pi / 2
-            
-            # Center of the Starting Radius.
-            Oein = start.get_arc_point(angle - pi / 2, start_rad + tool_rad)
-            # Start Point of the Radius
-            Pa_ein = Oein.get_arc_point(angle + pi, start_rad + tool_rad)
-            # Start Point of the straight line segment at begin.
-            Pg_ein = Pa_ein.get_arc_point(angle - pi / 2, start_ver)
-            
-            # Get the dive point for the starting contour and append it.
-            start_ein = Pg_ein.get_arc_point(angle, tool_rad)
-            self.geos.append(start_ein)
-
-            # generate the Start Line and append it including the compensation.
-            start_line = LineGeo(Pg_ein, Pa_ein)
-            self.geos.append(start_line)
-
-            # generate the start rad. and append it.
-            start_rad = ArcGeo(Pa=Pa_ein, Pe=start, O=Oein,
-                               r=start_rad + tool_rad, direction=0)
-            self.geos.append(start_rad)
-            
+        self.do_make_start_moves()
     
     def make_swivelknife_move(self):
         """
@@ -414,4 +328,8 @@ class StMove(QtGui.QGraphicsLineItem):
         """ 
         return self.path.boundingRect()
     
-
+    def Write_GCode(self, PostPro=None):
+        exstr = "" 
+        for geo in self.geos:
+            exstr += geo.Write_GCode(parent=self.parent, PostPro=PostPro)
+        return exstr
