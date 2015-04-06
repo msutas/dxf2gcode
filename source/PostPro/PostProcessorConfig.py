@@ -29,7 +29,7 @@ import os
 from Core.configobj import ConfigObj, flatten_errors
 from Core.validate import Validator
 
-# from dotdictlookup import DictDotLookup
+#from dotdictlookup import DictDotLookup
 import time
 
 import Core.constants as c
@@ -41,7 +41,7 @@ from PyQt4 import QtCore, QtGui
 import logging
 logger = logging.getLogger("PostPro.PostProcessorConfig") 
 
-POSTPRO_VERSION = "5"
+POSTPRO_VERSION = "4"
 """
 version tag - increment this each time you edit CONFIG_SPEC
 
@@ -57,7 +57,7 @@ POSTPRO_SPEC = str('''
     [Version]
 
     # do not edit the following value:
-    config_version = string(default="''' + \
+    config_version = string(default="'''  + \
     str(POSTPRO_VERSION) + '")\n' + \
 '''
     [General]
@@ -70,8 +70,6 @@ POSTPRO_SPEC = str('''
     cc_outside_the_piece = boolean(default=True)
     export_ccw_arcs_only = boolean(default=False)
     max_arc_radius = float(default=10000)
-    lead_in_move =  option('radius', 'middle_of_longest_geo', 'other1', default = 'radius')
-    lead_out_move = option('None','other1',default = 'None') 
     
     code_begin_units_mm = string(default="G21 (Units in millimeters)")
     code_begin_units_in = string(default="G20 (Units in inches)")
@@ -115,7 +113,7 @@ class MyPostProConfig(QtCore.QObject):
     """
     This class hosts all functions related to the PostProConfig File.
     """
-    def __init__(self, filename='postpro_config' + c.CONFIG_EXTENSION):
+    def __init__(self, filename = 'postpro_config' + c.CONFIG_EXTENSION):
         """
         initialize the varspace of an existing plugin instance
         init_varspace() is a superclass method of plugin
@@ -127,7 +125,7 @@ class MyPostProConfig(QtCore.QObject):
         self.folder = os.path.join(g.folder, c.DEFAULT_POSTPRO_DIR)
         self.filename = os.path.join(self.folder, filename)
         
-        self.default_config = False  # whether a new name was generated
+        self.default_config = False # whether a new name was generated
         self.var_dict = dict()
         self.spec = ConfigObj(POSTPRO_SPEC, interpolation=False, list_values=False, _inspec=True)
 
@@ -166,7 +164,7 @@ class MyPostProConfig(QtCore.QObject):
                 section_string = ', '.join(section_list)
                 if error == False:
                     error = self.tr('Missing value or section.')
-                g.logger.logger.error(section_string + ' = ' + error)       
+                g.logger.logger.error( section_string + ' = ' + error)       
 
             if validate_errors:
                 raise BadConfigFileError, self.tr("syntax errors in postpro_config file")
@@ -174,7 +172,7 @@ class MyPostProConfig(QtCore.QObject):
             # check config file version against internal version
 
             if POSTPRO_VERSION:
-                fileversion = self.var_dict['Version']['config_version']  # this could raise KeyError
+                fileversion = self.var_dict['Version']['config_version'] # this could raise KeyError
 
                 if fileversion != POSTPRO_VERSION:
                     raise VersionMismatchError, (fileversion, POSTPRO_VERSION)
@@ -202,7 +200,7 @@ class MyPostProConfig(QtCore.QObject):
             logger.debug(self.tr("read existing varspace '%s'") % (self.filename))
 
         # convenience - flatten nested config dict to access it via self.config.sectionname.varname
-        self.var_dict.main.interpolation = False  # avoid ConfigObj getting too clever
+        self.var_dict.main.interpolation = False # avoid ConfigObj getting too clever
         self.vars = DictDotLookup(self.var_dict) 
 
     def make_settings_folder(self): 
@@ -219,7 +217,7 @@ class MyPostProConfig(QtCore.QObject):
         If no postprocessor config file exists this function is called 
         to generate the config file based on its specification.
         """
-        # check for existing setting folder or create one
+        #check for existing setting folder or create one
         self.make_settings_folder()
         
         # derive config file with defaults from spec
