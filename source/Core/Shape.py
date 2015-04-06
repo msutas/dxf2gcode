@@ -24,9 +24,9 @@
 #   
 ############################################################################
 
-#Main Class Shape
+# Main Class Shape
 
-#import sys, os, string, ConfigParser 
+# import sys, os, string, ConfigParser 
 
 from PyQt4 import QtCore, QtGui
 from math import sqrt
@@ -71,11 +71,11 @@ class ShapeClass(QtGui.QGraphicsItem):
         self.pen = QtGui.QPen(QtCore.Qt.black)
         self.left_pen = QtGui.QPen(QtCore.Qt.darkCyan)
         self.right_pen = QtGui.QPen(QtCore.Qt.darkMagenta)
-        self.sel_pen = QtGui.QPen(QtCore.Qt.red, 2) #,QtCore.Qt.DashLine
+        self.sel_pen = QtGui.QPen(QtCore.Qt.red, 2)  # ,QtCore.Qt.DashLine
         self.sel_pen.setCosmetic(True)
-        self.dis_pen = QtGui.QPen(QtCore.Qt.gray) #2,QtCore.Qt.DotLine
+        self.dis_pen = QtGui.QPen(QtCore.Qt.gray)  # 2,QtCore.Qt.DotLine
         self.dis_pen.setCosmetic(True)
-        self.sel_dis_pen = QtGui.QPen(QtCore.Qt.blue) #2,QtCore.Qt.DotLine
+        self.sel_dis_pen = QtGui.QPen(QtCore.Qt.blue)  # 2,QtCore.Qt.DotLine
         self.sel_dis_pen.setCosmetic(True)
         
         self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
@@ -100,7 +100,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         self.selectionChangedCallback = None
         self.enableDisableCallback = None
         
-        #Parameters for drag knife
+        # Parameters for drag knife
         """
         @param dragDepth: a smaller depth used for retract/swivel move This is 
         not implemented for now. If required may be done TODO.
@@ -108,8 +108,8 @@ class ShapeClass(QtGui.QGraphicsItem):
         This will set a variable of ArcGeo.drag to true TODO fix in export. Not 
         working up to now.
         """
-        self.dragAngle = g.config.vars.Drag_Knife_Options['dragAngle'] *pi/180
-        #self.dragDepth = axis3_slice_depth #g.config.vars.Drag_Knife_Options['dragDepth']
+        self.dragAngle = g.config.vars.Drag_Knife_Options['dragAngle'] * pi / 180
+        # self.dragDepth = axis3_slice_depth #g.config.vars.Drag_Knife_Options['dragDepth']
         
 
     def contains_point(self, x, y):
@@ -222,8 +222,8 @@ class ShapeClass(QtGui.QGraphicsItem):
 #        
 #        # begin with a circle around the start point 
 #        hitpath.addEllipse(start.x,start.y, tolerance, tolerance);  
-## 
-##    //input now starts with the 2nd point (there was a takeFirst) 
+# # 
+# #    //input now starts with the 2nd point (there was a takeFirst) 
 #        for geo in self.geos:
 #            geo.add2hitpath(hitpath=hitpath,
 #                            parent=self.parent,
@@ -254,7 +254,7 @@ class ShapeClass(QtGui.QGraphicsItem):
 #            
 #    
 #    QPainterPath intersectionTestPath(QList<QPointF> input, qreal tolerance) 
-#{ 
+# { 
 #    //will be the result 
 #    QPainterPath path; 
 # 
@@ -314,7 +314,7 @@ class ShapeClass(QtGui.QGraphicsItem):
 #    //you won't need this if you construct a new path for every call 
 #    //to path.contains(). 
 #    return path.simplified(); 
-#} 
+# } 
 #
 #    
 #    
@@ -329,7 +329,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         @param event: Event Parameters passed to function
         """
         pass
-        #scene = self.scene()
+        # scene = self.scene()
      
 #        if event.button() == QtCore.Qt.LeftButton:
 #            super(ShapeClass, self).mousePressEvent(event)
@@ -428,17 +428,18 @@ class ShapeClass(QtGui.QGraphicsItem):
     def FindNearestStPoint(self, StPoint=Point(x=0.0, y=0.0)):
         """
         Find Nearest Point to given StartPoint. This is used to change the
-        start of closed contours
+        start of closed contours. See here too.
         @param StPoint: This i sthe point for which the nearest point shall
         be searched.
-        """
-                
+        
+        """  
+        
         if self.closed:
-            logger.debug(self.tr("Clicked Point: %s") %StPoint)
+            logger.debug(self.tr("Clicked Point: %s") % StPoint)
             start, dummy = self.geos[0].get_start_end_points(0, self.parent)
             min_distance = start.distance(StPoint)
             
-            logger.debug(self.tr("Old Start Point: %s") %start)
+            logger.debug(self.tr("Old Start Point: %s") % start)
             
             min_geo_nr = 0
             for geo_nr in range(1, len(self.geos)):
@@ -448,7 +449,7 @@ class ShapeClass(QtGui.QGraphicsItem):
                     min_distance = start.distance(StPoint)
                     min_geo_nr = geo_nr
     
-            #Overwrite the geometries in changed order.
+            # Overwrite the geometries in changed order.
             self.geos = self.geos[min_geo_nr:len(self.geos)] + self.geos[0:min_geo_nr]
             
             start, dummy = self.geos[0].get_start_end_points(0, self.parent)
@@ -528,7 +529,7 @@ class ShapeClass(QtGui.QGraphicsItem):
         This function is called from the GUI if the GUI needs to be updated after
         the reverse of the shape to.
         """
-        #self.update(self.boundingRect())
+        # self.update(self.boundingRect())
         start, start_ang = self.get_st_en_points(0)
         self.starrow.updatepos(start, angle=start_ang)
         
@@ -545,6 +546,8 @@ class ShapeClass(QtGui.QGraphicsItem):
         FIXME This shall be different for Just updating it or updating it for 
         plotting.
         """
+        
+        # This might be one point to implement it.
         self.stmove.updateCutCor(self.cut_cor)
         
     def updateCCplot(self):
@@ -567,36 +570,36 @@ class ShapeClass(QtGui.QGraphicsItem):
         """
         
         if g.config.machine_type == 'drag_knife':
-            return self.Write_GCode_Drag_Knife(LayerContent=LayerContent, 
+            return self.Write_GCode_Drag_Knife(LayerContent=LayerContent,
                                                PostPro=PostPro)
         
-        #initialisation of the string
+        # initialisation of the string
         exstr = "" 
         
-        #Create the Start_moves once again if something was changed.
+        # Create the Start_moves once again if something was changed.
         """
         This function is called to make the geometry of the start move
         """
         self.stmove.make_start_moves()
         
-        #Calculate tool Radius.        
+        # Calculate tool Radius.        
         tool_rad = LayerContent.tool_diameter / 2
 
-        #Get the mill settings defined in the GUI
+        # Get the mill settings defined in the GUI
         safe_retract_depth = LayerContent.axis3_retract
         safe_margin = LayerContent.axis3_safe_margin
-        #If defined, choose the parameters from the Shape itself. Otherwise, choose the parameters from the parent Layer
+        # If defined, choose the parameters from the Shape itself. Otherwise, choose the parameters from the parent Layer
         max_slice = LayerContent.axis3_slice_depth if self.axis3_slice_depth is None else self.axis3_slice_depth
         workpiece_top_Z = LayerContent.axis3_start_mill_depth if self.axis3_start_mill_depth is None else self.axis3_start_mill_depth
-        initial_mill_depth = workpiece_top_Z - abs(max_slice) #We want to mill the piece, even for the first pass, so remove one "slice"
+        initial_mill_depth = workpiece_top_Z - abs(max_slice)  # We want to mill the piece, even for the first pass, so remove one "slice"
         depth = LayerContent.axis3_mill_depth if self.axis3_mill_depth is None else self.axis3_mill_depth
         f_g1_plane = LayerContent.f_g1_plane if self.f_g1_plane is None else self.f_g1_plane
         f_g1_depth = LayerContent.f_g1_depth if self.f_g1_depth is None else self.f_g1_depth
 
-        #Save the initial Cutter correction in a variable
+        # Save the initial Cutter correction in a variable
         has_reversed = 0
 
-        #If the Output Format is DXF do not perform more then one cut.
+        # If the Output Format is DXF do not perform more then one cut.
         if PostPro.vars.General["output_type"] == 'dxf':
             depth = max_slice
 
@@ -606,109 +609,109 @@ class ShapeClass(QtGui.QGraphicsItem):
         if initial_mill_depth < depth:
             logger.warning(self.tr("WARNING: initial mill depth (%i) is lower than end mill depth (%i). Using end mill depth as final depth.") % (initial_mill_depth, depth))
 
-            #Do not cut below the depth.
+            # Do not cut below the depth.
             initial_mill_depth = depth
 
         mom_depth = initial_mill_depth
 
 
-        #Move the tool to the start.  
+        # Move the tool to the start.  
         """
         First call to write the first geometry
         """        
-        exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent, 
+        exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent,
                                                  PostPro=PostPro)
         
-        #Add string to be added before the shape will be cut.
+        # Add string to be added before the shape will be cut.
         exstr += PostPro.write_pre_shape_cut()
 
-        #Cutter radius compensation when G41 or G42 is on, AND cutter compensation option is set to be done outside the piece
+        # Cutter radius compensation when G41 or G42 is on, AND cutter compensation option is set to be done outside the piece
         if self.cut_cor != 40 and PostPro.vars.General["cc_outside_the_piece"]:
-            #Calculate the starting point without tool compensation
-            #and add the compensation
+            # Calculate the starting point without tool compensation
+            # and add the compensation
             start, start_ang = self.get_st_en_points(0)
             exstr += PostPro.set_cut_cor(self.cut_cor, start)
             
-            exstr += PostPro.chg_feed_rate(f_g1_plane) #Added by Xavier because of code move (see above)
+            exstr += PostPro.chg_feed_rate(f_g1_plane)  # Added by Xavier because of code move (see above)
             
             """
             The line and the arc are added to GCode here. This may be required to adapt if more or less geometries are used for start move.
             """
-            exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent, 
+            exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent,
                                                      PostPro=PostPro)
-            exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent, 
+            exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent,
                                                      PostPro=PostPro)
 
-        exstr += PostPro.rap_pos_z(workpiece_top_Z + abs(safe_margin)) #Compute the safe margin from the initial mill depth
+        exstr += PostPro.rap_pos_z(workpiece_top_Z + abs(safe_margin))  # Compute the safe margin from the initial mill depth
         exstr += PostPro.chg_feed_rate(f_g1_depth)
         exstr += PostPro.lin_pol_z(mom_depth)
         exstr += PostPro.chg_feed_rate(f_g1_plane)
 
-        #Cutter radius compensation when G41 or G42 is on, AND cutter compensation option is set to be done inside the piece
+        # Cutter radius compensation when G41 or G42 is on, AND cutter compensation option is set to be done inside the piece
         if self.cut_cor != 40 and not PostPro.vars.General["cc_outside_the_piece"]:
-            #Calculate the starting point without tool compensation
-            #and add the compensation
+            # Calculate the starting point without tool compensation
+            # and add the compensation
             start, start_ang = self.get_st_en_points(0)
             exstr += PostPro.set_cut_cor(self.cut_cor, start)
             
-            exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent, 
+            exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent,
                                                      PostPro=PostPro)
-            exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent, 
+            exstr += self.stmove.geos[2].Write_GCode(parent=self.stmove.parent,
                                                      PostPro=PostPro)
 
-        #Write the geometries for the first cut
+        # Write the geometries for the first cut
         for geo in self.geos:
             exstr += geo.Write_GCode(self.parent, PostPro)
 
-        #Turning the cutter radius compensation
+        # Turning the cutter radius compensation
         if (not(self.cut_cor == 40)) & (PostPro.vars.General["cancel_cc_for_depth"] == 1):
             ende, en_angle = self.get_st_en_points(1)
             if self.cut_cor == 41:
-                pos_cut_out = ende.get_arc_point(en_angle - pi/2, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle - pi / 2, tool_rad)
             elif self.cut_cor == 42:
-                pos_cut_out = ende.get_arc_point(en_angle + pi/2, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle + pi / 2, tool_rad)
             exstr += PostPro.deactivate_cut_cor(pos_cut_out)
         
-        #Numbers of loops
+        # Numbers of loops
         snr = 0
-        #Loops for the number of cuts
+        # Loops for the number of cuts
         while mom_depth > depth and max_slice != 0.0:
             snr += 1
             mom_depth = mom_depth - abs(max_slice)
             if mom_depth < depth:
                 mom_depth = depth
             
-            #Erneutes Eintauchen
-            #???
+            # Erneutes Eintauchen
+            # ???
             exstr += PostPro.chg_feed_rate(f_g1_depth)
             exstr += PostPro.lin_pol_z(mom_depth)
             exstr += PostPro.chg_feed_rate(f_g1_plane)
             
-            #If it is not a closed contour
+            # If it is not a closed contour
             if self.closed == 0:
                 self.reverse()
                 self.switch_cut_cor()
-                has_reversed = 1 - has_reversed #switch the "reversed" state (in order to restore it at the end)
+                has_reversed = 1 - has_reversed  # switch the "reversed" state (in order to restore it at the end)
                 
-            #If cutter correction is enabled
+            # If cutter correction is enabled
             if ((not(self.cut_cor == 40)) & (self.closed == 0))or(PostPro.vars.General["cancel_cc_for_depth"] == 1):
-                #Calculate the starting point without tool compensation
-                #and add the compensation
+                # Calculate the starting point without tool compensation
+                # and add the compensation
                 start, start_ang = self.get_st_en_points(0)
                 exstr += PostPro.set_cut_cor(self.cut_cor, start)
                 
             for geo_nr in range(len(self.geos)):
                 exstr += self.geos[geo_nr].Write_GCode(self.parent, PostPro)
 
-            #Calculate the contour values with cutter radius compensation and without
+            # Calculate the contour values with cutter radius compensation and without
             ende, en_angle = self.get_st_en_points(1)
             if self.cut_cor == 41:
-                pos_cut_out = ende.get_arc_point(en_angle - pi/2, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle - pi / 2, tool_rad)
             elif self.cut_cor == 42:
-                pos_cut_out = ende.get_arc_point(en_angle + pi/2, tool_rad)
+                pos_cut_out = ende.get_arc_point(en_angle + pi / 2, tool_rad)
 
 
-            #Turning off the cutter radius compensation if needed
+            # Turning off the cutter radius compensation if needed
             if (not(self.cut_cor == 40)) & (PostPro.vars.General["cancel_cc_for_depth"] == 1):
                 exstr += PostPro.deactivate_cut_cor(pos_cut_out)
                 
@@ -716,23 +719,29 @@ class ShapeClass(QtGui.QGraphicsItem):
         Here you may add something if you need a dedicated end move ...
         """
         
-        #Do the tool retraction
+        # Do the tool retraction
         exstr += PostPro.chg_feed_rate(f_g1_depth)
         exstr += PostPro.lin_pol_z(workpiece_top_Z + abs(safe_margin))
         exstr += PostPro.rap_pos_z(safe_retract_depth)
 
-        #If cutter radius compensation is turned on.
+        # If cutter radius compensation is turned on.
         if (not(self.cut_cor == 40)) & (not(PostPro.vars.General["cancel_cc_for_depth"])):
-            #Calculate the contour values - with cutter radius compensation and without
+            # Calculate the contour values - with cutter radius compensation and without
             ende, en_angle = self.get_st_en_points(1)
+            
+            # closed shape & G42 => create exit move: redo first geo (https://sourceforge.net/p/dxf2gcode/tickets/61/)
+            if (self.cut_cor == 42) & (self.closed == 1) & (g.config.vars.General['lead_out_move'] == "add_first"):   
+                exstr += self.geos[0].Write_GCode(self.parent, PostPro)
+
+            
             exstr += PostPro.deactivate_cut_cor(ende)        
 
-        #Initial value of direction restored if necessary
+        # Initial value of direction restored if necessary
         if has_reversed != 0:
             self.reverse()
             self.switch_cut_cor()
             
-        #Add string to be added before the shape will be cut.
+        # Add string to be added before the shape will be cut.
         exstr += PostPro.write_post_shape_cut()
 
         return exstr
@@ -750,17 +759,17 @@ class ShapeClass(QtGui.QGraphicsItem):
         """
         if self.stmove.shape.geos[0].type == 'HoleGeo':
             return ""
-        #initialisation of the string
+        # initialisation of the string
         exstr = "" 
         
-        #Create the Start_moves once again if something was changed.
+        # Create the Start_moves once again if something was changed.
         self.stmove.make_start_moves()
         
 
-        #Get the mill settings defined in the GUI
+        # Get the mill settings defined in the GUI
         safe_retract_depth = LayerContent.axis3_retract
         safe_margin = LayerContent.axis3_safe_margin
-        #If defined, choose the parameters from the Shape itself. Otherwise, choose the parameters from the parent Layer
+        # If defined, choose the parameters from the Shape itself. Otherwise, choose the parameters from the parent Layer
         workpiece_top_Z = LayerContent.axis3_start_mill_depth if self.axis3_start_mill_depth is None else self.axis3_start_mill_depth
         f_g1_plane = LayerContent.f_g1_plane if self.f_g1_plane is None else self.f_g1_plane
         f_g1_depth = LayerContent.f_g1_depth if self.f_g1_depth is None else self.f_g1_depth
@@ -773,18 +782,18 @@ class ShapeClass(QtGui.QGraphicsItem):
         drag_depth = LayerContent.axis3_slice_depth if self.axis3_slice_depth is None else self.axis3_slice_depth
 
 
-        #Move the tool to the start.          
-        exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent, 
+        # Move the tool to the start.          
+        exstr += self.stmove.geos[0].Write_GCode(parent=self.stmove.parent,
                                                  PostPro=PostPro)
         
-        #Add string to be added before the shape will be cut.
+        # Add string to be added before the shape will be cut.
         exstr += PostPro.write_pre_shape_cut()
 
-        #Move into workpiece and start cutting into Z
-        exstr += PostPro.rap_pos_z(workpiece_top_Z + abs(safe_margin)) #Compute the safe margin from the initial mill depth
+        # Move into workpiece and start cutting into Z
+        exstr += PostPro.rap_pos_z(workpiece_top_Z + abs(safe_margin))  # Compute the safe margin from the initial mill depth
         exstr += PostPro.chg_feed_rate(f_g1_depth)
 
-        #Write the geometries for the first cut
+        # Write the geometries for the first cut
         drag = False
         if self.stmove.geos[1].type == "ArcGeo":
             if self.stmove.geos[1].drag:
@@ -798,8 +807,8 @@ class ShapeClass(QtGui.QGraphicsItem):
             drag = False
         exstr += PostPro.chg_feed_rate(f_g1_plane)
         
-        exstr += self.stmove.geos[1].Write_GCode(parent = self.stmove.parent, 
-                                 PostPro = PostPro)
+        exstr += self.stmove.geos[1].Write_GCode(parent=self.stmove.parent,
+                                 PostPro=PostPro)
                                  
         for geo in self.stmove.geos[2:]:
             if geo.type == "ArcGeo":
@@ -819,15 +828,15 @@ class ShapeClass(QtGui.QGraphicsItem):
                 exstr += PostPro.chg_feed_rate(f_g1_plane)
                 drag = False
                 
-            exstr += geo.Write_GCode(parent = self.stmove.parent, 
-                                     PostPro = PostPro)
+            exstr += geo.Write_GCode(parent=self.stmove.parent,
+                                     PostPro=PostPro)
 
-        #Do the tool retraction
+        # Do the tool retraction
         exstr += PostPro.chg_feed_rate(f_g1_depth)
         exstr += PostPro.lin_pol_z(workpiece_top_Z + abs(safe_margin))
         exstr += PostPro.rap_pos_z(safe_retract_depth)
 
-        #Add string to be added before the shape will be cut.
+        # Add string to be added before the shape will be cut.
         exstr += PostPro.write_post_shape_cut()
 
         return exstr

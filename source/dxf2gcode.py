@@ -39,7 +39,7 @@ import time
 
 from copy import copy, deepcopy
 
-import subprocess, tempfile #webbrowser, gettext, tempfile
+import subprocess, tempfile  # webbrowser, gettext, tempfile
 
 import argparse
 from PyQt4 import QtGui, QtCore
@@ -108,7 +108,7 @@ class Main(QtGui.QMainWindow):
         self.EntitieContents = []
         self.EntitiesRoot = []
         
-        self.filename = "" #loaded file name
+        self.filename = ""  # loaded file name
         
         QtCore.QObject.connect(self.TreeHandler,
                                QtCore.SIGNAL("exportOrderUpdated"),
@@ -127,7 +127,7 @@ class Main(QtGui.QMainWindow):
             
         self.readSettings()
         
-        g.config.metric = 1 # default drawing units: millimeters
+        g.config.metric = 1  # default drawing units: millimeters
         
     def tr(self, string_to_translate):
         """
@@ -195,11 +195,11 @@ class Main(QtGui.QMainWindow):
         """
         if (event.key() == QtCore.Qt.Key_Shift):   
             self.MyGraphicsView.setDragMode(QtGui.QGraphicsView.NoDrag)
-            #self.setDragMode(QtGui.QGraphicsView.RubberBandDrag )
+            # self.setDragMode(QtGui.QGraphicsView.RubberBandDrag )
         elif (event.key() == QtCore.Qt.Key_Control):
             self.MyGraphicsView.selmode = 0
         
-    def enableplotmenu(self, status = True):
+    def enableplotmenu(self, status=True):
         """
         Enable the Toolbar buttons.
         @param status: Set True to enable, False to disable
@@ -233,11 +233,11 @@ class Main(QtGui.QMainWindow):
         
         QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
 
-        #If there is something to load then call the load function callback
+        # If there is something to load then call the load function callback
         if not(self.filename == ""):
             logger.info(self.tr("File: %s selected") % self.filename)
             self.setWindowTitle(self.tr("DXF2GCODE - [%s]") % self.filename)
-            #Initialize the scale, rotate and move coordinates
+            # Initialize the scale, rotate and move coordinates
             self.cont_scale = 1.0
             self.cont_dx = 0.0
             self.cont_dy = 0.0
@@ -256,7 +256,7 @@ class Main(QtGui.QMainWindow):
         
         logger.info(self.tr("Reloading file: %s") % self.filename)
         
-        #If there is something to load then call the load function callback
+        # If there is something to load then call the load function callback
         if not(self.filename == ""):
             self.loadFile(self.filename)
     
@@ -271,20 +271,20 @@ class Main(QtGui.QMainWindow):
         logger.debug(self.tr('Optimize order of enabled shapes per layer'))
         self.MyGraphicsScene.resetexproutes()
         
-        #Get the export order from the QTreeView
+        # Get the export order from the QTreeView
         logger.debug(self.tr('Updating order according to TreeView'))
         self.TreeHandler.updateExportOrder()
         self.MyGraphicsScene.addexproutest()
         
         for LayerContent in self.LayerContents:
             
-            #Initial values for the Lists to export.
+            # Initial values for the Lists to export.
             self.shapes_to_write = []
             self.shapes_fixed_order = []
             shapes_st_en_points = []
             
-            #Check all shapes of Layer which shall be exported and create List
-            #for it.
+            # Check all shapes of Layer which shall be exported and create List
+            # for it.
             logger.debug(self.tr("Nr. of Shapes %s; Nr. of Shapes in Route %s") 
                                  % (len(LayerContent.shapes),
                                  len(LayerContent.exp_order)))
@@ -297,23 +297,23 @@ class Main(QtGui.QMainWindow):
                 self.shapes_to_write.append(shape_nr)
                 shapes_st_en_points.append(self.shapes[LayerContent.exp_order[shape_nr]].get_st_en_points())
             
-            #Perform Export only if the Number of shapes to export is bigger than 0
-            if len(self.shapes_to_write)>0:
-                        #Errechnen der Iterationen
-                        #Calculate the iterations
+            # Perform Export only if the Number of shapes to export is bigger than 0
+            if len(self.shapes_to_write) > 0:
+                        # Errechnen der Iterationen
+                        # Calculate the iterations
                 iter_ = min(g.config.vars.Route_Optimisation['max_iterations'],
-                         len(self.shapes_to_write)*50)
+                         len(self.shapes_to_write) * 50)
                 
-                #Adding the Start and End Points to the List.
+                # Adding the Start and End Points to the List.
                 x_st = g.config.vars.Plane_Coordinates['axis1_start_end']
                 y_st = g.config.vars.Plane_Coordinates['axis2_start_end']
-                start = Point(x = x_st, y = y_st)
-                ende = Point(x = x_st, y = y_st)
+                start = Point(x=x_st, y=y_st)
+                ende = Point(x=x_st, y=y_st)
                 shapes_st_en_points.append([start, ende])
                 
                 TSPs = []
-                TSPs.append(TSPoptimize(st_end_points = shapes_st_en_points,
-                                        order = self.shapes_fixed_order))
+                TSPs.append(TSPoptimize(st_end_points=shapes_st_en_points,
+                                        order=self.shapes_fixed_order))
                 logger.info(self.tr("TSP start values initialised for Layer %s")
                                     % LayerContent.LayerName)
                 logger.debug(self.tr("Shapes to write: %s")
@@ -322,7 +322,7 @@ class Main(QtGui.QMainWindow):
                                      % self.shapes_fixed_order)
                 
                 for it_nr in range(iter_):
-                    #Only show each 50th step.
+                    # Only show each 50th step.
                     if (it_nr % 50) == 0:
                         TSPs[-1].calc_next_iteration()
                         new_exp_order = []
@@ -345,7 +345,7 @@ class Main(QtGui.QMainWindow):
             self.ui.actionDelete_G0_paths.setEnabled(True)
             self.MyGraphicsScene.addexprouteen()
             
-        #Update order in the treeView, according to path calculation done by the TSP
+        # Update order in the treeView, according to path calculation done by the TSP
         self.TreeHandler.updateTreeViewOrder()
         
         QtGui.QApplication.restoreOverrideCursor()
@@ -374,7 +374,7 @@ class Main(QtGui.QMainWindow):
         
         logger.debug(self.tr('Export the enabled shapes'))
         
-        #Get the export order from the QTreeView
+        # Get the export order from the QTreeView
         self.TreeHandler.updateExportOrder()
         self.updateExportRoute()
         
@@ -384,7 +384,7 @@ class Main(QtGui.QMainWindow):
         
         if not(g.config.vars.General['write_to_stdout']):
             
-            #Get the name of the File to export
+            # Get the name of the File to export
             if saveas == None:
                 filename = self.showSaveDialog()
                 self.save_filename = str(filename[0].toUtf8()).decode("utf-8")
@@ -392,7 +392,7 @@ class Main(QtGui.QMainWindow):
                 filename = [None, None]
                 self.save_filename = saveas
             
-            #If Cancel was pressed
+            # If Cancel was pressed
             if not self.save_filename:
             
                 QtGui.QApplication.restoreOverrideCursor()
@@ -514,7 +514,7 @@ class Main(QtGui.QMainWindow):
                 "<a href='http://www.gnu.org/licenses/'>GNU GPLv3 license.</a><br>"\
                 "</body></html>") % (c.VERSION, c.REVISION, c.DATE, c.AUTHOR)
         
-        myAboutDialog(title = "About DXF2GCODE", message = message)
+        myAboutDialog(title="About DXF2GCODE", message=message)
         
     def setShow_wp_zero(self):
         """
@@ -547,7 +547,7 @@ class Main(QtGui.QMainWindow):
         """
         flag = self.ui.actionLive_update_export_route.isChecked()
         if not flag:
-            #Remove any existing export route, since it won't be updated anymore
+            # Remove any existing export route, since it won't be updated anymore
             self.MyGraphicsScene.resetexproutes()
         
         self.TreeHandler.setUpdateExportRoute(flag)
@@ -577,7 +577,7 @@ class Main(QtGui.QMainWindow):
         g.config.fitting_tolerance = float(SetTolDialog.result[1])
         
         self.reloadFile()
-        #self.MyGraphicsView.update()
+        # self.MyGraphicsView.update()
         
     def CallScaleAll(self):
         """
@@ -595,7 +595,7 @@ class Main(QtGui.QMainWindow):
         self.EntitiesRoot.sca = self.cont_scale
         
         self.reloadFile()
-        #self.MyGraphicsView.update()
+        # self.MyGraphicsView.update()
         
     def CallRotateAll(self):
         """
@@ -613,7 +613,7 @@ class Main(QtGui.QMainWindow):
         self.EntitiesRoot.rot = self.rotate
         
         self.reloadFile()
-        #self.MyGraphicsView.update()
+        # self.MyGraphicsView.update()
     
     def CallMoveWpZero(self):
         """
@@ -630,13 +630,13 @@ class Main(QtGui.QMainWindow):
         
         if MoveWpzDialog.result == 'Auto':
             minx = sys.float_info.max
-            maxy = - sys.float_info.max
+            maxy = -sys.float_info.max
             for shape in self.shapes:
                 if not(shape.isDisabled()):
                     r = shape.boundingRect()
                     if r.left() < minx:
                         minx = r.left()
-                    if r.bottom()  > maxy:
+                    if r.bottom() > maxy:
                         maxy = r.bottom()
             self.cont_dx = self.EntitiesRoot.p0.x - minx
             self.cont_dy = self.EntitiesRoot.p0.y + maxy
@@ -648,7 +648,7 @@ class Main(QtGui.QMainWindow):
         self.EntitiesRoot.p0.y = self.cont_dy
         
         self.reloadFile()
-        #self.MyGraphicsView.update()
+        # self.MyGraphicsView.update()
         
     def setMachineTypeToMilling(self):
         """
@@ -716,23 +716,23 @@ class Main(QtGui.QMainWindow):
         if (ext.lower() == ".ps") or (ext.lower() == ".pdf"):
             logger.info(self.tr("Sending Postscript/PDF to pstoedit"))
             
-            #Create temporary file which will be read by the program
+            # Create temporary file which will be read by the program
             filename = os.path.join(tempfile.gettempdir(), 'dxf2gcode_temp.dxf')
            
-            pstoedit_cmd = g.config.vars.Filters['pstoedit_cmd'] #"C:\Program Files (x86)\pstoedit\pstoedit.exe"
-            pstoedit_opt = g.config.vars.Filters['pstoedit_opt'] #['-f','dxf','-mm']
+            pstoedit_cmd = g.config.vars.Filters['pstoedit_cmd']  # "C:\Program Files (x86)\pstoedit\pstoedit.exe"
+            pstoedit_opt = g.config.vars.Filters['pstoedit_opt']  # ['-f','dxf','-mm']
             ps_filename = os.path.normcase(self.load_filename)
             cmd = [(('%s') % pstoedit_cmd)] + pstoedit_opt + [(('%s') % ps_filename), (('%s') % filename)]
             logger.debug(cmd)
             retcode = subprocess.call(cmd)
         
-        #self.textbox.text.delete(7.0, END)
+        # self.textbox.text.delete(7.0, END)
         logger.info(self.tr('Loading file: %s') % filename)
-        #logger.info("<a href=file:%s>%s</a>" % (filename, filename))
+        # logger.info("<a href=file:%s>%s</a>" % (filename, filename))
         
         values = ReadDXF(filename)
         
-        #Output the information in the text window
+        # Output the information in the text window
         logger.info(self.tr('Loaded layers: %s') % len(values.layers))
         logger.info(self.tr('Loaded blocks: %s') % len(values.blocks.Entities))
         for i in range(len(values.blocks.Entities)):
@@ -765,7 +765,7 @@ class Main(QtGui.QMainWindow):
         
         self.makeShapesAndPlot(values)
         
-        #After all is plotted enable the Menu entities
+        # After all is plotted enable the Menu entities
         self.enableplotmenu()
         self.ui.actionDelete_G0_paths.setEnabled(False)
         
@@ -777,12 +777,12 @@ class Main(QtGui.QMainWindow):
         @param values: Includes all values loaded from the dxf file
         """
         
-        #Generate the Shapes
+        # Generate the Shapes
         self.makeShapes(values,
-                        p0 = Point(x = self.cont_dx, y = self.cont_dy),
-                        pb = Point(x = 0.0, y = 0.0),
-                        sca = [self.cont_scale, self.cont_scale, self.cont_scale],
-                        rot = self.rotate)
+                        p0=Point(x=self.cont_dx, y=self.cont_dy),
+                        pb=Point(x=0.0, y=0.0),
+                        sca=[self.cont_scale, self.cont_scale, self.cont_scale],
+                        rot=self.rotate)
         
         # Automatic cutter compensation 
         self.automaticCutterCompensation()
@@ -790,11 +790,11 @@ class Main(QtGui.QMainWindow):
         # Break insertion
         Breaks(self.LayerContents).process()
         
-        #Populate the treeViews
+        # Populate the treeViews
         self.TreeHandler.buildEntitiesTree(self.EntitiesRoot)
         self.TreeHandler.buildLayerTree(self.LayerContents)
         
-        #Print the values
+        # Print the values
         self.MyGraphicsView.clearScene()
         self.MyGraphicsScene = MyGraphicsScene()
         
@@ -807,7 +807,7 @@ class Main(QtGui.QMainWindow):
         self.MyGraphicsView.show()
         self.MyGraphicsView.setFocus()
         
-        #Autoscale the Canvas
+        # Autoscale the Canvas
         self.MyGraphicsView.autoscale()
     
     
@@ -826,21 +826,21 @@ class Main(QtGui.QMainWindow):
         """
         self.values = values
         
-        #Put back the contours
+        # Put back the contours
         del(self.shapes[:])
         del(self.LayerContents[:])
         del(self.EntitiesRoot)
-        self.EntitiesRoot = EntitieContentClass(Nr = 0, Name = 'Entities',
-                                                parent = None, children = [],
-                                                p0 = p0, pb = pb,
-                                                sca = sca, rot = rot)
+        self.EntitiesRoot = EntitieContentClass(Nr=0, Name='Entities',
+                                                parent=None, children=[],
+                                                p0=p0, pb=pb,
+                                                sca=sca, rot=rot)
         
-        #Start mit () bedeutet zuweisen der Entities -1 = Standard
-        #Start with () means to assign the entities -1 = Default ???
-        self.makeEntitiesShapes(parent = self.EntitiesRoot)
+        # Start mit () bedeutet zuweisen der Entities -1 = Standard
+        # Start with () means to assign the entities -1 = Default ???
+        self.makeEntitiesShapes(parent=self.EntitiesRoot)
         self.LayerContents.sort()
         
-    def makeEntitiesShapes(self, parent = None, ent_nr = -1):
+    def makeEntitiesShapes(self, parent=None, ent_nr=-1):
         """
         Instance is called prior to plotting the shapes. It creates
         all shape classes which are later plotted into the graphics.
@@ -858,47 +858,47 @@ class Main(QtGui.QMainWindow):
             ent_nr = self.values.Get_Block_Nr(parent.Name)
             entities = self.values.blocks.Entities[ent_nr]
         
-        #Zuweisen der Geometrien in die Variable geos & Konturen in cont
-        #Assigning the geometries in the variables geos & contours in cont
+        # Zuweisen der Geometrien in die Variable geos & Konturen in cont
+        # Assigning the geometries in the variables geos & contours in cont
         ent_geos = entities.geo
         
-        #Loop for the number of contours
+        # Loop for the number of contours
         for cont in entities.cont:
-            #Abfrage falls es sich bei der Kontur um ein Insert eines Blocks handelt
-            #Query if it is in the contour of an insert of a block
+            # Abfrage falls es sich bei der Kontur um ein Insert eines Blocks handelt
+            # Query if it is in the contour of an insert of a block
             if ent_geos[cont.order[0][0]].Typ == "Insert":
                 ent_geo = ent_geos[cont.order[0][0]]
                 
-                #Zuweisen des Basispunkts f�r den Block
-                #Assign the base point for the block
+                # Zuweisen des Basispunkts f�r den Block
+                # Assign the base point for the block
                 new_ent_nr = self.values.Get_Block_Nr(ent_geo.BlockName)
                 new_entities = self.values.blocks.Entities[new_ent_nr]
                 pb = new_entities.basep
                 
-                #Skalierung usw. des Blocks zuweisen
-                #Scaling, etc. assign the block
+                # Skalierung usw. des Blocks zuweisen
+                # Scaling, etc. assign the block
                 p0 = ent_geos[cont.order[0][0]].Point
                 sca = ent_geos[cont.order[0][0]].Scale
                 rot = ent_geos[cont.order[0][0]].rot
                 
                 
-                #Erstellen des neuen Entitie Contents f�r das Insert
-                #Creating the new Entitie Contents for the insert
-                NewEntitieContent = EntitieContentClass(Nr = 0,
-                                        Name = ent_geo.BlockName,
-                                        parent = parent, children = [],
-                                        p0 = p0,
-                                        pb = pb,
-                                        sca = sca,
-                                        rot = rot)
+                # Erstellen des neuen Entitie Contents f�r das Insert
+                # Creating the new Entitie Contents for the insert
+                NewEntitieContent = EntitieContentClass(Nr=0,
+                                        Name=ent_geo.BlockName,
+                                        parent=parent, children=[],
+                                        p0=p0,
+                                        pb=pb,
+                                        sca=sca,
+                                        rot=rot)
                 
                 parent.addchild(NewEntitieContent)
                 
-                self.makeEntitiesShapes(parent = NewEntitieContent,
-                                        ent_nr = ent_nr)
+                self.makeEntitiesShapes(parent=NewEntitieContent,
+                                        ent_nr=ent_nr)
                 
             else:
-                #Loop for the number of geometries
+                # Loop for the number of geometries
                 self.shapes.append(ShapeClass(len(self.shapes),
                                               cont.closed,
                                               40,
@@ -919,11 +919,11 @@ class Main(QtGui.QMainWindow):
                         for geo in ent_geo.geo:
                             self.appendshapes(copy(geo))
                 
-                #All shapes have to be CCW direction.
+                # All shapes have to be CCW direction.
                 self.shapes[-1].AnalyseAndOptimize()
                 self.shapes[-1].FindNearestStPoint()
                 
-                #Connect the shapeSelectionChanged and enableDisableShape signals to our treeView, so that selections of the shapes are reflected on the treeView
+                # Connect the shapeSelectionChanged and enableDisableShape signals to our treeView, so that selections of the shapes are reflected on the treeView
                 self.shapes[-1].setSelectionChangedCallback(self.TreeHandler.updateShapeSelection)
                 self.shapes[-1].setEnableDisableCallback(self.TreeHandler.updateShapeEnabling)
                 
@@ -933,10 +933,13 @@ class Main(QtGui.QMainWindow):
     def appendshapes(self, geo):
         """
         Documentation required
+        This is where the edges are split. Will be performed for all edgest. This is not the best way at all. 
         """
         if self.ui.actionSplit_Edges.isChecked() == True:
             if geo.type == 'LineGeo':
-                diff = (geo.Pe - geo.Pa) / 2.0
+                diff = (geo.Pe - geo.Pa)
+                diff.x = diff.x / 2
+                diff.y = diff.y / 2                
                 geo_b = deepcopy(geo)
                 geo_a = deepcopy(geo)
                 geo_b.Pe -= diff
@@ -959,10 +962,10 @@ class Main(QtGui.QMainWindow):
         """
 
         # Disable shape by default, if it lives on an ignored layer        
-        #if shape.LayerContent.should_ignore():
+        # if shape.LayerContent.should_ignore():
         #    shape.setDisable(True, True)
         
-        #Check if the layer already exists and add shape if it is.
+        # Check if the layer already exists and add shape if it is.
         for LayCon in self.LayerContents:
             if LayCon.LayerNr == lay_nr:
                 LayCon.shapes.append(shape)
@@ -970,7 +973,7 @@ class Main(QtGui.QMainWindow):
                 shape.setDisabledIfOnDisabledLayer()
                 return
         
-        #If the Layer does not exist create a new one.
+        # If the Layer does not exist create a new one.
         LayerName = self.values.layers[lay_nr].name
         self.LayerContents.append(LayerContentClass(lay_nr, LayerName, [shape]))
         shape.LayerContent = self.LayerContents[-1]
@@ -1029,8 +1032,8 @@ if __name__ == "__main__":
     """
     The main function which is executed after program start.
     """
-    Log=LoggerClass(logger)
-    #Get local language and install if available.
+    Log = LoggerClass(logger)
+    # Get local language and install if available.
 
 
     g.config = MyConfig()
@@ -1040,7 +1043,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     
     locale = QtCore.QLocale.system().name()
-    logger.debug("locale: %s" %locale)
+    logger.debug("locale: %s" % locale)
     translator = QtCore.QTranslator()
     if translator.load("dxf2gcode_" + locale, "./i18n"):
         app.installTranslator(translator)    
@@ -1048,7 +1051,7 @@ if __name__ == "__main__":
     window = Main(app)
     g.window = window
     
-    #shall be sent to. This Class needs a function "def write(self, charstr)
+    # shall be sent to. This Class needs a function "def write(self, charstr)
     Log.add_window_logger(window.myMessageBox)
     
 
@@ -1056,20 +1059,20 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("filename",nargs="?")
+    parser.add_argument("filename", nargs="?")
 
 #    parser.add_argument("-f", "--file", dest = "filename",
 #                      help = "read data from FILENAME")
-    parser.add_argument("-e", "--export", dest = "export_filename",
-                      help = "export data to FILENAME")
-    parser.add_argument("-q", "--quiet", action = "store_true",
-                      dest = "quiet", help = "no GUI")
+    parser.add_argument("-e", "--export", dest="export_filename",
+                      help="export data to FILENAME")
+    parser.add_argument("-q", "--quiet", action="store_true",
+                      dest="quiet", help="no GUI")
     
 #    parser.add_option("-v", "--verbose",
 #                      action = "store_true", dest = "verbose")
     options = parser.parse_args()
 
-    #(options, args) = parser.parse_args()
+    # (options, args) = parser.parse_args()
     logger.debug("Started with following options \n%s" % (parser))
     
 
@@ -1079,7 +1082,7 @@ if __name__ == "__main__":
 
     if not(options.filename is None):
         window.filename = options.filename.decode("cp1252")
-        #Initialize the scale, rotate and move coordinates
+        # Initialize the scale, rotate and move coordinates
         window.cont_scale = 1.0
         window.cont_dx = 0.0
         window.cont_dy = 0.0

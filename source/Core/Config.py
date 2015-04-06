@@ -28,8 +28,8 @@ import os
 from Core.configobj import ConfigObj, flatten_errors
 from Core.validate import Validator
 
-#from dotdictlookup import DictDotLookup
-#import time
+# from dotdictlookup import DictDotLookup
+# import time
 import pprint
 
 import Core.constants as c
@@ -41,7 +41,7 @@ from PyQt4 import QtGui, QtCore
 import logging
 logger = logging.getLogger("Core.Config")
 
-CONFIG_VERSION = "9.2"
+CONFIG_VERSION = "9.3"
 """
 version tag - increment this each time you edit CONFIG_SPEC
 
@@ -56,7 +56,7 @@ CONFIG_SPEC = str('''
 # do not edit the following section name:
     [Version]
     # do not edit the following value:
-    config_version = string(default = "'''  + \
+    config_version = string(default = "''' + \
     str(CONFIG_VERSION) + '")\n' + \
     '''
     [Paths]
@@ -88,6 +88,8 @@ CONFIG_SPEC = str('''
     default_SplitEdges = boolean(default = False)
     default_AutomaticCutterCompensation = boolean(default = False)
     machine_type = option('milling', 'drag_knife', 'lathe', default = 'milling')
+    lead_in_move = option('none','radius','radius2',default = 'radius')
+    lead_out_move = option('none','add_first',default = 'none')
     
     [Drag_Knife_Options]
     dragAngle = float(default = 20)
@@ -197,18 +199,18 @@ class MyConfig(QtCore.QObject):
         self.folder = os.path.join(g.folder, c.DEFAULT_CONFIG_DIR)
         self.filename = os.path.join(self.folder, 'config' + c.CONFIG_EXTENSION)
         
-        self.default_config = False # whether a new name was generated
+        self.default_config = False  # whether a new name was generated
         self.var_dict = dict()
         self.spec = ConfigObj(CONFIG_SPEC, interpolation=False, list_values=False, _inspec=True)
         
-        #try:
+        # try:
         self.load_config()
         
         self.machine_type = self.vars.General['machine_type']
         self.fitting_tolerance = self.vars.Import_Parameters['fitting_tolerance']
         self.point_tolerance = self.vars.Import_Parameters['point_tolerance']
         
-        #except Exception, msg:
+        # except Exception, msg:
         #    logger.warning(self.tr("Config loading failed: %s") % (msg))
         #    return False
     
@@ -254,14 +256,14 @@ class MyConfig(QtCore.QObject):
                     section_string = ', '.join(section_list)
                     if error == False:
                         error = self.tr('Missing value or section.')
-                    logger.error( section_string + ' = ' + error)
+                    logger.error(section_string + ' = ' + error)
                 
                 if validate_errors:
-                    raise BadConfigFileError,"syntax errors in config file"
+                    raise BadConfigFileError, "syntax errors in config file"
                 
                 # check config file version against internal version
                 if CONFIG_VERSION:
-                    fileversion = self.var_dict['Version']['config_version'] # this could raise KeyError
+                    fileversion = self.var_dict['Version']['config_version']  # this could raise KeyError
                     
                     if fileversion != CONFIG_VERSION:
                         raise VersionMismatchError, (fileversion, CONFIG_VERSION)
@@ -286,21 +288,21 @@ class MyConfig(QtCore.QObject):
                     logger.debug(self.tr("created default varspace '%s'") % (self.filename))
             else:
                 self.default_config = False
-                #logger.debug(self.dir())
-                #logger.debug(self.tr("created default varspace '%s'") %(self.filename))
-                #logger.debug(self.tr("read existing varspace '%s'") %(self.filename))
+                # logger.debug(self.dir())
+                # logger.debug(self.tr("created default varspace '%s'") %(self.filename))
+                # logger.debug(self.tr("read existing varspace '%s'") %(self.filename))
         else:
             self.create_default_config()
             self.default_config = True
             logger.debug(self.tr("created default varspace '%s'") % (self.filename))
         
         # convenience - flatten nested config dict to access it via self.config.sectionname.varname
-        self.var_dict.main.interpolation = False # avoid ConfigObj getting too clever
+        self.var_dict.main.interpolation = False  # avoid ConfigObj getting too clever
         self.vars = DictDotLookup(self.var_dict)
     
     
     def create_default_config(self):
-        #check for existing setting folder or create one
+        # check for existing setting folder or create one
         self.make_settings_folder()
         
         # derive config file with defaults from spec
@@ -354,7 +356,7 @@ class DictDotLookup(object):
     def __repr__(self):
         return pprint.pformat(self.__dict__)
     
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    cfg_data = eval("""{
 #        'foo' : {
 #            'bar' : {

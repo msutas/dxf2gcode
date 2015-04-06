@@ -2,10 +2,11 @@
 
 ############################################################################
 #   
-#   Copyright (C) 2008-2014
-#    Christian Kohl�ffel
+#   Copyright (C) 2008-2015
+#    Christian Kohlöffel
 #    Vinzenz Schulz
 #    Jean-Paul Schouwstra
+#    Robert Lichtenberger
 #   
 #   This file is part of DXF2GCODE.
 #   
@@ -42,7 +43,7 @@ logger = logging.getLogger('Gui.StMove')
 
 from PyQt4 import QtCore, QtGui
 
-#Length of the cross.
+# Length of the cross.
 dl = 0.2
 DEBUG = 1
 
@@ -52,7 +53,7 @@ class StMove(QtGui.QGraphicsLineItem):
     also performs the Plotting and Export of this moves. It is linked
     to the shape as its parent
     """
-    def __init__(self, startp, angle, 
+    def __init__(self, startp, angle,
                  pencolor=QtCore.Qt.green,
                  shape=None, parent=None):
         """
@@ -97,7 +98,7 @@ class StMove(QtGui.QGraphicsLineItem):
 
     def make_start_moves(self):
         """
-        This function called to create the start move. It will
+        This function is called to create the start move. It will
         be generated based on the given values for start and angle.
         """
         del(self.geos[:])
@@ -107,9 +108,9 @@ class StMove(QtGui.QGraphicsLineItem):
             self.make_swivelknife_move()
             return
         
-        #BaseEntitie created to add the StartMoves etc. This Entitie must not
-        #be offset or rotated etc.
-        BaseEntitie = EntitieContentClass(Nr= -1, Name='BaseEntitie',
+        # BaseEntitie created to add the StartMoves etc. This Entitie must not
+        # be offset or rotated etc.
+        BaseEntitie = EntitieContentClass(Nr=-1, Name='BaseEntitie',
                                           parent=None,
                                           children=[],
                                           p0=Point(x=0.0, y=0.0),
@@ -120,14 +121,14 @@ class StMove(QtGui.QGraphicsLineItem):
         self.parent = BaseEntitie
         
 
-        #Get the start rad. and the length of the line segment at begin. 
+        # Get the start rad. and the length of the line segment at begin. 
         start_rad = self.shape.LayerContent.start_radius
         start_ver = start_rad
 
-        #Get tool radius based on tool diameter.   
-        tool_rad = self.shape.LayerContent.tool_diameter/2
+        # Get tool radius based on tool diameter.   
+        tool_rad = self.shape.LayerContent.tool_diameter / 2
         
-        #Calculate the starting point with and without compensation.        
+        # Calculate the starting point with and without compensation.        
         start = self.startp
         angle = self.angle
       
@@ -136,48 +137,57 @@ class StMove(QtGui.QGraphicsLineItem):
     
             """
             Start Move is create here. Change this to something els to try it ....
+            Once again, here may be the point to do the work
             """
-        #Cutting Compensation Left        
-        elif self.shape.cut_cor == 41:
-            #Center of the Starting Radius.
-            Oein = start.get_arc_point(angle + pi/2, start_rad + tool_rad)
-            #Start Point of the Radius
+        # Cutting Compensation Left    
+        elif self.shape.cut_cor == 41 and (g.config.vars.General['lead_in_move'] == "radius"):     
+        # elif self.shape.cut_cor == 41:
+            # Center of the Starting Radius.
+            Oein = start.get_arc_point(angle + pi / 2, start_rad + tool_rad)
+            # Start Point of the Radius
             Pa_ein = Oein.get_arc_point(angle + pi, start_rad + tool_rad)
-            #Start Point of the straight line segment at begin.
-            Pg_ein = Pa_ein.get_arc_point(angle + pi/2, start_ver)
+            # Start Point of the straight line segment at begin.
+            Pg_ein = Pa_ein.get_arc_point(angle + pi / 2, start_ver)
             
-            #Get the dive point for the starting contour and append it.
+            # Get the dive point for the starting contour and append it.
             start_ein = Pg_ein.get_arc_point(angle, tool_rad)
             self.geos.append(start_ein)
 
-            #generate the Start Line and append it including the compensation. 
+            # generate the Start Line and append it including the compensation. 
             start_line = LineGeo(Pg_ein, Pa_ein)
             self.geos.append(start_line)
 
-            #generate the start rad. and append it.
-            start_rad = ArcGeo(Pa=Pa_ein, Pe=start, O=Oein, 
+            # generate the start rad. and append it.
+            start_rad = ArcGeo(Pa=Pa_ein, Pe=start, O=Oein,
                                r=start_rad + tool_rad, direction=1)
             self.geos.append(start_rad)
             
-        #Cutting Compensation Right            
-        elif self.shape.cut_cor == 42:
-            #Center of the Starting Radius.
-            Oein = start.get_arc_point(angle - pi/2, start_rad + tool_rad)
-            #Start Point of the Radius
-            Pa_ein = Oein.get_arc_point(angle + pi, start_rad + tool_rad)
-            #Start Point of the straight line segment at begin.
-            Pg_ein = Pa_ein.get_arc_point(angle - pi/2, start_ver)
+        # Cutting Compensation Right            
+        elif (self.shape.cut_cor == 42  and
+              ((g.config.vars.General['lead_in_move'] == "radius") or
+               (g.config.vars.General['lead_in_move'] == "radius2"))):
             
-            #Get the dive point for the starting contour and append it.
+            # closed shape & G42 => create exit move: redo first geo (https://sourceforge.net/p/dxf2gcode/tickets/61/)
+            if (g.config.vars.General['lead_in_move'] == "radius2"):
+                angle = angle + pi / 2
+            
+            # Center of the Starting Radius.
+            Oein = start.get_arc_point(angle - pi / 2, start_rad + tool_rad)
+            # Start Point of the Radius
+            Pa_ein = Oein.get_arc_point(angle + pi, start_rad + tool_rad)
+            # Start Point of the straight line segment at begin.
+            Pg_ein = Pa_ein.get_arc_point(angle - pi / 2, start_ver)
+            
+            # Get the dive point for the starting contour and append it.
             start_ein = Pg_ein.get_arc_point(angle, tool_rad)
             self.geos.append(start_ein)
 
-            #generate the Start Line and append it including the compensation.
+            # generate the Start Line and append it including the compensation.
             start_line = LineGeo(Pg_ein, Pa_ein)
             self.geos.append(start_line)
 
-            #generate the start rad. and append it.
-            start_rad = ArcGeo(Pa=Pa_ein, Pe=start, O=Oein, 
+            # generate the start rad. and append it.
+            start_rad = ArcGeo(Pa=Pa_ein, Pe=start, O=Oein,
                                r=start_rad + tool_rad, direction=0)
             self.geos.append(start_rad)
             
@@ -191,18 +201,18 @@ class StMove(QtGui.QGraphicsLineItem):
         
 
 
-        offset =self.shape.LayerContent.tool_diameter/2
+        offset = self.shape.LayerContent.tool_diameter / 2
         dragAngle = self.shape.dragAngle
 
-        startnorm = offset*Point(1,0,0)
-        prvend, prvnorm = Point(0,0),Point(0,0)
+        startnorm = offset * Point(1, 0, 0)
+        prvend, prvnorm = Point(0, 0), Point(0, 0)
         first = 1
 
         
-        #start = self.startp     
+        # start = self.startp     
 
-        #Use The same parent as for the shape
-        self.parent=self.shape.parent
+        # Use The same parent as for the shape
+        self.parent = self.shape.parent
         
         for geo in self.shape.geos:
             if geo.type == 'LineGeo':
@@ -211,7 +221,7 @@ class StMove(QtGui.QGraphicsLineItem):
                     first = 0
                     prvend = geo_b.Pa + startnorm
                     prvnorm = startnorm
-                norm = offset*geo_b.Pa.unit_vector(geo_b.Pe)
+                norm = offset * geo_b.Pa.unit_vector(geo_b.Pe)
                 geo_b.Pa += norm
                 geo_b.Pe += norm
                 if not prvnorm == norm:
@@ -229,39 +239,39 @@ class StMove(QtGui.QGraphicsLineItem):
                     prvend = geo_b.Pa + startnorm
                     prvnorm = startnorm
                 if geo_b.ext > 0.0:
-                    norma = offset*Point(cos(geo_b.s_ang+pi/2), sin(geo_b.s_ang+pi/2))
-                    norme = Point(cos(geo_b.e_ang+pi/2), sin(geo_b.e_ang+pi/2))
+                    norma = offset * Point(cos(geo_b.s_ang + pi / 2), sin(geo_b.s_ang + pi / 2))
+                    norme = Point(cos(geo_b.e_ang + pi / 2), sin(geo_b.e_ang + pi / 2))
                 else:
-                    norma = offset*Point(cos(geo_b.s_ang-pi/2), sin(geo_b.s_ang-pi/2))
-                    norme = Point(cos(geo_b.e_ang-pi/2), sin(geo_b.e_ang-pi/2))
+                    norma = offset * Point(cos(geo_b.s_ang - pi / 2), sin(geo_b.s_ang - pi / 2))
+                    norme = Point(cos(geo_b.e_ang - pi / 2), sin(geo_b.e_ang - pi / 2))
                 geo_b.Pa += norma
                 if norme.x > 0:
-                    geo_b.Pe = Point(geo_b.Pe.x+offset/(sqrt(1+(norme.y/norme.x)**2)),
-                        geo_b.Pe.y+(offset*norme.y/norme.x)/(sqrt(1+(norme.y/norme.x)**2)))
-                elif norme.x ==0:
+                    geo_b.Pe = Point(geo_b.Pe.x + offset / (sqrt(1 + (norme.y / norme.x) ** 2)),
+                        geo_b.Pe.y + (offset * norme.y / norme.x) / (sqrt(1 + (norme.y / norme.x) ** 2)))
+                elif norme.x == 0:
                     geo_b.Pe = Point(geo_b.Pe.x,
                         geo_b.Pe.y)
                 else:
-                    geo_b.Pe = Point(geo_b.Pe.x-offset/(sqrt(1+(norme.y/norme.x)**2)),
-                        geo_b.Pe.y-(offset*norme.y/norme.x)/(sqrt(1+(norme.y/norme.x)**2)))
+                    geo_b.Pe = Point(geo_b.Pe.x - offset / (sqrt(1 + (norme.y / norme.x) ** 2)),
+                        geo_b.Pe.y - (offset * norme.y / norme.x) / (sqrt(1 + (norme.y / norme.x) ** 2)))
                 if not prvnorm == norma:
                     swivel = ArcGeo(Pa=prvend, Pe=geo_b.Pa, r=offset, direction=prvnorm.cross_product(norma).z)
                     swivel.drag = dragAngle < abs(swivel.ext)
                     self.geos.append(swivel)
                 prvend = geo_b.Pe
-                prvnorm = offset*norme
-                if -pi<geo_b.ext<pi:
-                    self.geos.append(ArcGeo(Pa=geo_b.Pa, Pe=geo_b.Pe, r=sqrt(geo_b.r**2+offset**2), direction=geo_b.ext))
+                prvnorm = offset * norme
+                if -pi < geo_b.ext < pi:
+                    self.geos.append(ArcGeo(Pa=geo_b.Pa, Pe=geo_b.Pe, r=sqrt(geo_b.r ** 2 + offset ** 2), direction=geo_b.ext))
                 else:
-                    geo_b = ArcGeo(Pa=geo_b.Pa, Pe=geo_b.Pe, r=sqrt(geo_b.r**2+offset**2), direction=-geo_b.ext)
+                    geo_b = ArcGeo(Pa=geo_b.Pa, Pe=geo_b.Pe, r=sqrt(geo_b.r ** 2 + offset ** 2), direction=-geo_b.ext)
                     geo_b.ext = -geo_b.ext
                     self.geos.append(geo_b)
-            #else:
+            # else:
             #    self.geos.append(copy(geo))
         if not prvnorm == startnorm:
-            self.geos.append(ArcGeo(Pa=prvend, Pe=prvend-prvnorm+startnorm, r=offset, direction=prvnorm.cross_product(startnorm).z))
+            self.geos.append(ArcGeo(Pa=prvend, Pe=prvend - prvnorm + startnorm, r=offset, direction=prvnorm.cross_product(startnorm).z))
             
-        self.geos.insert(0,self.geos[0].Pa)
+        self.geos.insert(0, self.geos[0].Pa)
    
     def updateCutCor(self, cutcor):
         """
@@ -285,7 +295,7 @@ class StMove(QtGui.QGraphicsLineItem):
         if not(self.ccarrow is None):
             logger.debug("Removing ccarrow from scene")
             self.ccarrow.hide()
-            logger.debug("Parent Item: %s" %self.ccarrow.parentItem())
+            logger.debug("Parent Item: %s" % self.ccarrow.parentItem())
             del(self.ccarrow)
             self.ccarrow = None
         
@@ -303,14 +313,14 @@ class StMove(QtGui.QGraphicsLineItem):
         elif self.shape.cut_cor == 41:
             self.ccarrow = Arrow(startp=self.startp,
                           length=length,
-                          angle=self.angle+pi/2,
+                          angle=self.angle + pi / 2,
                           color=QtGui.QColor(200, 200, 255),
                           pencolor=QtGui.QColor(200, 100, 255))
             self.ccarrow.setParentItem(self)
         else:
             self.ccarrow = Arrow(startp=self.startp,
                           length=length,
-                          angle=self.angle-pi/2,
+                          angle=self.angle - pi / 2,
                           color=QtGui.QColor(200, 200, 255),
                           pencolor=QtGui.QColor(200, 100, 255))
             self.ccarrow.setParentItem(self)
@@ -328,9 +338,9 @@ class StMove(QtGui.QGraphicsLineItem):
         if self.shape.cut_cor == 40:
             self.ccarrow = None
         elif self.shape.cut_cor == 41:
-            self.ccarrow.updatepos(startp, angle=angle+pi/2)
+            self.ccarrow.updatepos(startp, angle=angle + pi / 2)
         else:
-            self.ccarrow.updatepos(startp, angle=angle-pi/2)
+            self.ccarrow.updatepos(startp, angle=angle - pi / 2)
             
         self.make_start_moves()
         self.make_papath()
