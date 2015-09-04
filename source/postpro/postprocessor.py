@@ -560,7 +560,7 @@ class MyPostProcessor(object):
         # + or - sign if required. Also used for Leading Zeros
         if signed_val and pre_dec_z_pad:
             numstr = ('%+0' + str(pre_dec + post_dec + 1) +
-                      '.' + str(post_dec) + 'f') % number
+                      '.' + str(post_dec) + 'f') % number   
         elif signed_val == 0 and pre_dec_z_pad:
             numstr = ('%0' + str(pre_dec + post_dec + 1) +
                       '.' + str(post_dec) + 'f') % number
@@ -572,7 +572,7 @@ class MyPostProcessor(object):
                       '.' + str(post_dec) + 'f') % number
 
         # Gives the required decimal format.
-        exstr += numstr[0:-(post_dec + 1)]
+        exstr += numstr[0:-(post_dec + 1)].lstrip();
 
         exstr_end = dec_sep
         exstr_end += numstr[-post_dec:]
